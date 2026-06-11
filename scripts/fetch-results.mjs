@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Load .env file
+process.loadEnvFile(".env");
+
 // ── Config ──────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,38 +24,101 @@ const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
 });
 
-// ── Helpers ─────────────────────────────────────────────────────────
-function sleep(ms) {
-  return new Promise((ok) => setTimeout(ok, ms));
-}
+// ── Team name mapping (Portuguese → English / football-data.org) ────
+const TEAM_MAP = {
+  "México": "Mexico",
+  "África do Sul": "South Africa",
+  "Coreia do Sul": "South Korea",
+  "República Tcheca": "Czech Republic",
+  "Canadá": "Canada",
+  "Bósnia e Herzegovina": "Bosnia and Herzegovina",
+  "Catar": "Qatar",
+  "Suíça": "Switzerland",
+  "Brasil": "Brazil",
+  "Marrocos": "Morocco",
+  "Haiti": "Haiti",
+  "Escócia": "Scotland",
+  "Estados Unidos": "United States",
+  "Paraguai": "Paraguay",
+  "Austrália": "Australia",
+  "Turquia": "Turkey",
+  "Alemanha": "Germany",
+  "Curaçao": "Curaçao",
+  "Costa do Marfim": "Ivory Coast",
+  "Equador": "Ecuador",
+  "Holanda": "Netherlands",
+  "Japão": "Japan",
+  "Suécia": "Sweden",
+  "Tunísia": "Tunisia",
+  "Bélgica": "Belgium",
+  "Egito": "Egypt",
+  "Irã": "Iran",
+  "Nova Zelândia": "New Zealand",
+  "Espanha": "Spain",
+  "Cabo Verde": "Cape Verde",
+  "Arábia Saudita": "Saudi Arabia",
+  "Uruguai": "Uruguay",
+  "França": "France",
+  "Senegal": "Senegal",
+  "Iraque": "Iraq",
+  "Noruega": "Norway",
+  "Argentina": "Argentina",
+  "Argélia": "Algeria",
+  "Áustria": "Austria",
+  "Jordânia": "Jordan",
+  "Portugal": "Portugal",
+  "RD Congo": "DR Congo",
+  "Uzbequistão": "Uzbekistan",
+  "Colômbia": "Colombia",
+  "Inglaterra": "England",
+  "Croácia": "Croatia",
+  "Gana": "Ghana",
+  "Panamá": "Panama",
+};
 
-/** Normalize team name for fuzzy matching (lowercase, no accents, etc.) */
-function normalize(name) {
+/**
+ * Normalize a team name (lowercase, strip accents/special chars).
+ */
+function normalizeName(name) {
   return name
     .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove diacritics
+    .normalize("NFD").replace(/[\u0300-\u036f\u00f8]/g, "")
     .replace(/[^a-z0-9 ]/g, "")
     .trim();
 }
 
-/** Simple Levenshtein distance for fuzzy team name matching */
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
+/**
+ * Check if two team names match. Tries exact match first (after
+ * normalising), then Levenshtein (tolerance 2).
+ */
+function teamNamesMatch(a, b) {
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  if (na === nb) return true;
+  // simple Levenshtein
+  const m = na.length, n = nb.length;
   const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;
   for (let i = 1; i <= m; i++)
     for (let j = 1; j <= n; j++)
-      dp[i][j] =
-        a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1]
-          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-  return dp[m][n];
+      dp[i][j] = na[i - 1] === nb[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n] <= 2;
 }
 
-function fuzzyMatch(ourTeam, apiTeam) {
-  const d = levenshtein(normalize(ourTeam), normalize(apiTeam));
-  return d <= 2; // allow up to 2 edits
+/**
+ * Convert a team name stored in the DB (Portuguese) to the English
+ * name used by football-data.org. Falls back to the Portuguese name
+ * as-is when no mapping exists.
+ */
+function toApiName(ptName) {
+  return TEAM_MAP[ptName] ?? ptName;
+}
+
+function sleep(ms) {
+  return new Promise((ok) => setTimeout(ok, ms));
 }
 
 // ── Football API ────────────────────────────────────────────────────
@@ -140,18 +206,22 @@ async function main() {
     console.log(`[fetch-results] API returned ${apiMatches.length} matches for ${dateStr}`);
 
     for (const ourMatch of byDate[dateStr]) {
+      // Convert our team names to English for API matching
+      const teamAen = toApiName(ourMatch.team_a);
+      const teamBen = toApiName(ourMatch.team_b);
+
       // Try to find a matching API match by team names
       const apiMatch = apiMatches.find((am) => {
         const homeName = am.homeTeam?.name ?? am.homeTeam?.shortName ?? "";
         const awayName = am.awayTeam?.name ?? am.awayTeam?.shortName ?? "";
         return (
-          (fuzzyMatch(ourMatch.team_a, homeName) && fuzzyMatch(ourMatch.team_b, awayName)) ||
-          (fuzzyMatch(ourMatch.team_a, awayName) && fuzzyMatch(ourMatch.team_b, homeName))
+          (teamNamesMatch(teamAen, homeName) && teamNamesMatch(teamBen, awayName)) ||
+          (teamNamesMatch(teamAen, awayName) && teamNamesMatch(teamBen, homeName))
         );
       });
 
       if (!apiMatch) {
-        console.log(`  ✗ ${ourMatch.team_a} vs ${ourMatch.team_b} → no match found in API`);
+        console.log(`  ✗ ${ourMatch.team_a} (${teamAen}) vs ${ourMatch.team_b} (${teamBen}) → no match found in API`);
         failed++;
         continue;
       }
@@ -165,7 +235,16 @@ async function main() {
 
       // Determine which side is team_a and team_b
       const homeName = apiMatch.homeTeam?.name ?? apiMatch.homeTeam?.shortName ?? "";
-      const isHomeTeamA = fuzzyMatch(ourMatch.team_a, homeName);
+      const awayName = apiMatch.awayTeam?.name ?? apiMatch.awayTeam?.shortName ?? "";
+      const isHomeTeamA = teamNamesMatch(teamAen, homeName);
+      const isAwayTeamA = !isHomeTeamA && teamNamesMatch(teamAen, awayName);
+
+      if (!isHomeTeamA && !isAwayTeamA) {
+        console.log(`  ✗ ${ourMatch.team_a} vs ${ourMatch.team_b} → could not map sides (API: ${homeName} vs ${awayName})`);
+        failed++;
+        continue;
+      }
+
       const resultA = isHomeTeamA ? score.home : score.away;
       const resultB = isHomeTeamA ? score.away : score.home;
 
