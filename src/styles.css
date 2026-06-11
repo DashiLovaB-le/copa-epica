@@ -33,9 +33,9 @@
   --color-brand-blue: var(--brand-blue);
   --color-brand-green: var(--brand-green);
 
-  --font-display: "Bebas Neue", "Inter", sans-serif;
-  --font-sans: "Inter", "Roboto", system-ui, sans-serif;
-  --font-mono: "Roboto Mono", monospace;
+  --font-display: "Oxanium", sans-serif;
+  --font-sans: "Chakra Petch", sans-serif;
+  --font-mono: "Chakra Petch Mono", monospace;
 
   --shadow-brutal: 6px 6px 0 0 var(--brand-yellow);
   --shadow-brutal-sm: 4px 4px 0 0 var(--brand-yellow);
