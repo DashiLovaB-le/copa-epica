@@ -7,14 +7,12 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      matches: {
+      copaepica_matches: {
         Row: {
           created_at: string
           id: string
@@ -50,7 +48,7 @@ export type Database = {
         }
         Relationships: []
       }
-      predictions: {
+      copaepica_predictions: {
         Row: {
           created_at: string
           id: string
@@ -89,12 +87,12 @@ export type Database = {
             foreignKeyName: "predictions_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
-            referencedRelation: "matches"
+            referencedRelation: "copaepica_matches"
             referencedColumns: ["id"]
           },
         ]
       }
-      profiles: {
+      copaepica_profiles: {
         Row: {
           correct_guesses: number
           created_at: string
@@ -124,20 +122,20 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
+      copaepica_user_roles: {
         Row: {
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["copaepica_app_role"]
           user_id: string
         }
         Insert: {
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["copaepica_app_role"]
           user_id: string
         }
         Update: {
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["copaepica_app_role"]
           user_id?: string
         }
         Relationships: []
@@ -147,16 +145,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
+      copaepica_has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database["public"]["Enums"]["copaepica_app_role"]
           _user_id: string
         }
         Returns: boolean
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      copaepica_app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -284,7 +282,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      copaepica_app_role: ["admin", "user"],
     },
   },
 } as const
