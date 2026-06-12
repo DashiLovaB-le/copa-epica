@@ -3,6 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMatchDate } from "@/lib/format";
+import { PageHeader } from "@/components/PageHeader";
+import { updateResults } from "@/lib/api/update-results.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/rodadas")({
   head: () => ({ meta: [{ title: "Rodadas — Copa Épica" }] }),
@@ -67,6 +70,27 @@ function RodadasPage() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const [updating, setUpdating] = useState(false);
+
+  async function handleUpdate() {
+    setUpdating(true);
+    try {
+      const result = await updateResults();
+      const total = result.updated.length + result.failed.length;
+      if (result.updated.length > 0) {
+        toast.success(`${result.updated.length}/${total} jogos atualizados`);
+      } else if (result.failed.length > 0) {
+        toast.info(`Nenhum resultado novo encontrado (${result.failed.length} pendentes)`);
+      } else {
+        toast.info("Nenhum jogo pendente para atualizar");
+      }
+      qc.invalidateQueries({ queryKey: ["rodadas"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao atualizar resultados");
+    } finally {
+      setUpdating(false);
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["rodadas", user.id],
@@ -119,12 +143,19 @@ function RodadasPage() {
 
   return (
     <div className="pb-4">
-      <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
-        <h1 className="text-4xl font-display tracking-wider leading-none">RODADAS</h1>
-        <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
-          Histórico de resultados
-        </p>
-      </header>
+      <PageHeader
+        title="RODADAS"
+        subtitle="Histórico de resultados"
+        right={
+          <button
+            onClick={handleUpdate}
+            disabled={updating}
+            className="flex-shrink-0 bg-[color:var(--brand-green)] text-white brutal-border brutal-shadow px-4 py-2 font-display text-lg tracking-wider active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow"
+          >
+            {updating ? "..." : "ATUALIZAR"}
+          </button>
+        }
+      />
 
       {roundNumbers.length === 0 ? (
         <div className="p-4">
