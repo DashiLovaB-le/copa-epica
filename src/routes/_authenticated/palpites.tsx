@@ -49,8 +49,30 @@ const COUNTRY_FLAGS: Record<string, string> = {
   Egito: "🇪🇬", Tunísia: "🇹🇳",
 };
 
+const COUNTRY_ABBR: Record<string, string> = {
+  Brasil: "BRA", Argentina: "ARG", França: "FRA", Alemanha: "GER",
+  Espanha: "ESP", Portugal: "POR", Holanda: "NED", Inglaterra: "ENG",
+  Bélgica: "BEL", Croácia: "CRO", Suíça: "SUI", México: "MEX",
+  "Estados Unidos": "USA", Canadá: "CAN", Japão: "JPN",
+  "Coreia do Sul": "KOR", Austrália: "AUS", Uruguai: "URU",
+  Colômbia: "COL", Equador: "ECU", Suécia: "SWE", Noruega: "NOR",
+  Marrocos: "MAR", Senegal: "SEN", Gana: "GHA", Egito: "EGY",
+  Tunísia: "TUN", Paraguai: "PAR", Turquia: "TUR", Áustria: "AUT",
+  Jordânia: "JOR", Argélia: "ALG", Iraque: "IRQ",
+  "República Tcheca": "CZE", "África do Sul": "RSA",
+  "Nova Zelândia": "NZL", "Cabo Verde": "CPV",
+  "Arábia Saudita": "KSA", Irã: "IRN", Haiti: "HAI",
+  Escócia: "SCO", "Bósnia e Herzegovina": "BIH", Catar: "QAT",
+  Curaçao: "CUW", "Costa do Marfim": "CIV", "RD Congo": "COD",
+  Uzbequistão: "UZB", Panamá: "PAN",
+};
+
 function getFlag(name: string): string {
   return COUNTRY_FLAGS[name] ?? "";
+}
+
+function getAbbr(name: string): string {
+  return COUNTRY_ABBR[name] ?? name.slice(0, 3).toUpperCase();
 }
 
 type Filter = "todos" | "hoje" | "em-breve" | "encerrados";
@@ -413,10 +435,16 @@ function GameCard({
             SEU PALPITE
           </p>
         )}
-        <div className="flex items-center justify-center gap-2 mt-2">
-          <ScoreInput value={a} onChange={setA} ariaLabel={`Gols ${match.team_a}`} />
-          <span className="font-display text-3xl">×</span>
-          <ScoreInput value={b} onChange={setB} ariaLabel={`Gols ${match.team_b}`} />
+        <div className="flex items-end justify-center gap-2 mt-2">
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none">{getAbbr(match.team_a)}</span>
+            <ScoreInput value={a} onChange={setA} ariaLabel={`Gols ${match.team_a}`} />
+          </div>
+          <span className="font-display text-3xl leading-none pb-2">×</span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none">{getAbbr(match.team_b)}</span>
+            <ScoreInput value={b} onChange={setB} ariaLabel={`Gols ${match.team_b}`} />
+          </div>
         </div>
       </div>
       <button

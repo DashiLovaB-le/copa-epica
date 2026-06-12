@@ -84,7 +84,6 @@ function RankingPage() {
   const participants = ranking ?? [];
   const userEntry = participants.find((p) => p.id === user.id);
   const top3 = participants.slice(0, 3);
-  const rest = participants.slice(3);
   const maxPoints = participants.length > 0 ? participants[0].points : 0;
   const gapToTop3 =
     userEntry && top3.length === 3 && userEntry.rank > 3
@@ -173,51 +172,64 @@ function RankingPage() {
           </>
         )}
 
-        {rest.length > 0 && (
+        {participants.length > 0 && (
           <>
             <div>
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
-                CLASSIFICAÇÃO
+                TABELA COMPLETA
               </p>
-              <div className="space-y-2">
-                {rest.map((r) => {
-                  const isMe = r.id === user.id;
-                  return (
-                    <div
-                      key={r.id}
-                      className={`flex items-center gap-4 brutal-border p-3 ${
-                        isMe
-                          ? "bg-[color:var(--brand-yellow)] ring-2 ring-black"
-                          : "bg-white"
-                      }`}
-                    >
-                      <div className="w-12 h-12 shrink-0 brutal-border bg-[color:var(--brand-blue)] text-white flex items-center justify-center font-display text-2xl">
-                        {r.rank}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold uppercase truncate">
-                          {r.display_name}
-                        </p>
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
-                          {r.correct_guesses} acertos
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-display text-3xl leading-none">
-                          {r.points}
-                        </p>
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
-                          pts
-                        </p>
-                      </div>
-                      {isMe && (
-                        <span className="bg-black text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 -mr-1 shrink-0">
-                          VOCÊ
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="bg-white brutal-border overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b-[3px] border-black text-[10px] uppercase font-bold tracking-widest">
+                      <th className="p-3 w-14 text-center">#</th>
+                      <th className="p-3">Participante</th>
+                      <th className="p-3 text-center">Acertos</th>
+                      <th className="p-3 text-right">Pontos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {participants.map((r) => {
+                      const isMe = r.id === user.id;
+                      return (
+                        <tr
+                          key={r.id}
+                          className={`border-b border-black/10 text-sm ${
+                            isMe ? "bg-[color:var(--brand-yellow)] ring-2 ring-black" : ""
+                          }`}
+                        >
+                          <td className="p-3 text-center">
+                            <span
+                              className={`inline-flex items-center justify-center w-8 h-8 font-display text-lg ${
+                                r.rank <= 3
+                                  ? "bg-[color:var(--brand-blue)] text-white"
+                                  : "text-black"
+                              }`}
+                            >
+                              {r.rank}
+                            </span>
+                          </td>
+                          <td className="p-3 font-bold uppercase">
+                            <span className="flex items-center gap-2">
+                              {r.display_name}
+                              {isMe && (
+                                <span className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 leading-none shrink-0">
+                                  VOCÊ
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center font-bold text-black/60">
+                            {r.correct_guesses}
+                          </td>
+                          <td className="p-3 text-right font-display text-xl leading-none">
+                            {r.points}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
             <div className="h-0 border-t-[3px] border-black" />

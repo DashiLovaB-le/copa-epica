@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import bgAuth from "@/assets/bg-auth.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -74,15 +75,11 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div
+      className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${bgAuth})` }}
+    >
       <Toaster position="top-center" />
-      <header className="brutal-border border-x-0 border-t-0 bg-[color:var(--brand-blue)] text-white p-5">
-        <h1 className="text-4xl font-display tracking-wider">COPA ÉPICA</h1>
-        <p className="text-xs uppercase font-bold tracking-widest mt-1">
-          Palpites • Ranking • Glória
-        </p>
-      </header>
-
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-white brutal-border brutal-shadow-yellow p-6 space-y-5">
           <div className="flex">
