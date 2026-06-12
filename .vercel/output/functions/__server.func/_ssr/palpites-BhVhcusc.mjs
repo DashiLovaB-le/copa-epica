@@ -1,0 +1,595 @@
+import { i as __toESM } from "../_runtime.mjs";
+import { n as supabase } from "./client-Ba_38dtR.mjs";
+import { a as require_jsx_runtime, i as require_react, r as useQueryClient, t as useQuery } from "../_libs/react+tanstack__react-query.mjs";
+import { n as toast } from "../_libs/sonner.mjs";
+import { t as Route } from "./palpites-BKmXXfwB.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/palpites-BhVhcusc.js
+var import_react = /* @__PURE__ */ __toESM(require_react());
+var import_jsx_runtime = require_jsx_runtime();
+function ScoreInput({ value, onChange, disabled, ariaLabel }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+		"aria-label": ariaLabel,
+		inputMode: "numeric",
+		pattern: "[0-9]*",
+		maxLength: 2,
+		disabled,
+		value,
+		onChange: (e) => {
+			const raw = e.target.value.replace(/\D/g, "");
+			if (raw === "") return onChange("");
+			onChange(Math.min(99, parseInt(raw, 10)));
+		},
+		className: "w-16 h-16 text-center font-display text-4xl brutal-border bg-white text-black focus:outline-none focus:bg-[color:var(--brand-yellow)] disabled:bg-neutral-200 disabled:text-neutral-500"
+	});
+}
+var MONTHS_SHORT = [
+	"JAN",
+	"FEV",
+	"MAR",
+	"ABR",
+	"MAI",
+	"JUN",
+	"JUL",
+	"AGO",
+	"SET",
+	"OUT",
+	"NOV",
+	"DEZ"
+];
+function formatMatchDate(iso) {
+	const d = new Date(iso);
+	return `${d.getDate().toString().padStart(2, "0")} ${MONTHS_SHORT[d.getMonth()]} • ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+function formatCountdown(ms) {
+	if (ms <= 0) return "";
+	const totalHours = Math.floor(ms / 36e5);
+	const mins = Math.floor(ms % 36e5 / 6e4);
+	if (totalHours >= 24) return `${Math.floor(totalHours / 24)}d ${totalHours % 24}h`;
+	return `${totalHours.toString().padStart(2, "0")}h ${mins.toString().padStart(2, "0")}m`;
+}
+var COUNTRY_FLAGS = {
+	Brasil: "🇧🇷",
+	Argentina: "🇦🇷",
+	França: "🇫🇷",
+	Alemanha: "🇩🇪",
+	Espanha: "🇪🇸",
+	Itália: "🇮🇹",
+	Portugal: "🇵🇹",
+	Holanda: "🇳🇱",
+	Inglaterra: "🇬🇧",
+	Bélgica: "🇧🇪",
+	Croácia: "🇭🇷",
+	Sérvia: "🇷🇸",
+	Suíça: "🇨🇭",
+	Dinamarca: "🇩🇰",
+	Polônia: "🇵🇱",
+	México: "🇲🇽",
+	"Estados Unidos": "🇺🇸",
+	EUA: "🇺🇸",
+	Canadá: "🇨🇦",
+	Japão: "🇯🇵",
+	"Coreia do Sul": "🇰🇷",
+	Austrália: "🇦🇺",
+	Uruguai: "🇺🇾",
+	Colômbia: "🇨🇴",
+	Equador: "🇪🇨",
+	Peru: "🇵🇪",
+	Chile: "🇨🇱",
+	Suécia: "🇸🇪",
+	Noruega: "🇳🇴",
+	Ucrânia: "🇺🇦",
+	Marrocos: "🇲🇦",
+	Senegal: "🇸🇳",
+	Nigéria: "🇳🇬",
+	Camarões: "🇨🇲",
+	Gana: "🇬🇭",
+	Egito: "🇪🇬",
+	Tunísia: "🇹🇳"
+};
+var COUNTRY_ABBR = {
+	Brasil: "BRA",
+	Argentina: "ARG",
+	França: "FRA",
+	Alemanha: "GER",
+	Espanha: "ESP",
+	Portugal: "POR",
+	Holanda: "NED",
+	Inglaterra: "ENG",
+	Bélgica: "BEL",
+	Croácia: "CRO",
+	Suíça: "SUI",
+	México: "MEX",
+	"Estados Unidos": "USA",
+	Canadá: "CAN",
+	Japão: "JPN",
+	"Coreia do Sul": "KOR",
+	Austrália: "AUS",
+	Uruguai: "URU",
+	Colômbia: "COL",
+	Equador: "ECU",
+	Suécia: "SWE",
+	Noruega: "NOR",
+	Marrocos: "MAR",
+	Senegal: "SEN",
+	Gana: "GHA",
+	Egito: "EGY",
+	Tunísia: "TUN",
+	Paraguai: "PAR",
+	Turquia: "TUR",
+	Áustria: "AUT",
+	Jordânia: "JOR",
+	Argélia: "ALG",
+	Iraque: "IRQ",
+	"República Tcheca": "CZE",
+	"África do Sul": "RSA",
+	"Nova Zelândia": "NZL",
+	"Cabo Verde": "CPV",
+	"Arábia Saudita": "KSA",
+	Irã: "IRN",
+	Haiti: "HAI",
+	Escócia: "SCO",
+	"Bósnia e Herzegovina": "BIH",
+	Catar: "QAT",
+	Curaçao: "CUW",
+	"Costa do Marfim": "CIV",
+	"RD Congo": "COD",
+	Uzbequistão: "UZB",
+	Panamá: "PAN"
+};
+function getFlag(name) {
+	return COUNTRY_FLAGS[name] ?? "";
+}
+function getAbbr(name) {
+	return COUNTRY_ABBR[name] ?? name.slice(0, 3).toUpperCase();
+}
+async function fetchData(userId) {
+	const [matches, preds, profileResult, allProfiles] = await Promise.all([
+		supabase.from("copaepica_matches").select("*").order("match_date", { ascending: true }),
+		supabase.from("copaepica_predictions").select("match_id,predicted_a,predicted_b,points_earned,is_correct").eq("user_id", userId),
+		supabase.from("copaepica_profiles").select("id,display_name,points,correct_guesses").eq("id", userId).single(),
+		supabase.from("copaepica_profiles").select("id").order("points", { ascending: false }).order("correct_guesses", { ascending: false })
+	]);
+	if (matches.error) throw matches.error;
+	if (preds.error) throw preds.error;
+	if (profileResult.error) throw profileResult.error;
+	if (allProfiles.error) throw allProfiles.error;
+	const profile = profileResult.data;
+	const rank = (allProfiles.data ?? []).findIndex((p) => p.id === userId) + 1;
+	return {
+		matches: matches.data ?? [],
+		preds: preds.data ?? [],
+		profile,
+		rank: rank > 0 ? rank : null
+	};
+}
+function PalpitesPage() {
+	const { user } = Route.useRouteContext();
+	const qc = useQueryClient();
+	const [filter, setFilter] = (0, import_react.useState)("todos");
+	const { data, isLoading } = useQuery({
+		queryKey: ["palpites", user.id],
+		queryFn: () => fetchData(user.id)
+	});
+	(0, import_react.useEffect)(() => {
+		const ch = supabase.channel("palpites-feed").on("postgres_changes", {
+			event: "*",
+			schema: "public",
+			table: "copaepica_matches"
+		}, () => qc.invalidateQueries({ queryKey: ["palpites"] })).on("postgres_changes", {
+			event: "*",
+			schema: "public",
+			table: "copaepica_predictions"
+		}, () => qc.invalidateQueries({ queryKey: ["palpites"] })).on("postgres_changes", {
+			event: "*",
+			schema: "public",
+			table: "copaepica_profiles"
+		}, () => qc.invalidateQueries({ queryKey: ["palpites"] })).subscribe();
+		return () => {
+			supabase.removeChannel(ch);
+		};
+	}, [qc]);
+	const now = (0, import_react.useMemo)(() => Date.now(), []);
+	const availableMatches = (0, import_react.useMemo)(() => (data?.matches ?? []).filter((m) => m.result_a === null), [data]);
+	const completedMatches = (0, import_react.useMemo)(() => (data?.matches ?? []).filter((m) => m.result_a !== null), [data]);
+	const currentRound = (0, import_react.useMemo)(() => {
+		if (availableMatches.length > 0) return availableMatches[0].round_number;
+		if (completedMatches.length > 0) return completedMatches[completedMatches.length - 1].round_number;
+		return 1;
+	}, [availableMatches, completedMatches]);
+	const nextMatchCountdown = (0, import_react.useMemo)(() => {
+		const nextMatch = availableMatches.find((m) => new Date(m.match_date).getTime() > now);
+		if (!nextMatch) return null;
+		return formatCountdown(new Date(nextMatch.match_date).getTime() - now);
+	}, [availableMatches, now]);
+	const filteredMatches = (0, import_react.useMemo)(() => {
+		const today = /* @__PURE__ */ new Date();
+		const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+		const endOfToday = startOfToday + 864e5;
+		return availableMatches.filter((m) => {
+			const matchTime = new Date(m.match_date).getTime();
+			switch (filter) {
+				case "todos": return true;
+				case "hoje": return matchTime >= startOfToday && matchTime < endOfToday;
+				case "em-breve": return matchTime > now && matchTime <= endOfToday + 864e5;
+				case "encerrados": return matchTime <= now;
+			}
+		});
+	}, [
+		availableMatches,
+		filter,
+		now
+	]);
+	async function savePrediction(matchId, a, b) {
+		const { error } = await supabase.from("copaepica_predictions").upsert({
+			user_id: user.id,
+			match_id: matchId,
+			predicted_a: a,
+			predicted_b: b
+		}, { onConflict: "user_id,match_id" });
+		if (error) {
+			toast.error(error.message);
+			throw error;
+		}
+		qc.invalidateQueries({ queryKey: ["palpites"] });
+		toast.success("Palpite salvo!");
+	}
+	if (isLoading) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "flex items-center justify-center min-h-[60vh]",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "font-display text-3xl animate-pulse",
+			children: "Carregando..."
+		})
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "pb-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+				className: "bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					className: "text-4xl font-display tracking-wider leading-none",
+					children: "BOLÃO DA COPA"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]",
+					children: ["Palpites da Rodada ", currentRound]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "bg-black text-white brutal-border border-x-0 border-t-0 p-4 flex items-center justify-between",
+				children: [data?.rank ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center gap-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "font-display text-2xl",
+						children: [
+							"#",
+							data.rank,
+							"º"
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: "text-xs uppercase font-bold tracking-widest opacity-80",
+						children: [data.profile.points, " pts"]
+					})]
+				}) : null, nextMatchCountdown && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "text-xs uppercase font-bold tracking-widest opacity-80",
+					children: ["Próximo jogo em ", nextMatchCountdown]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex brutal-border border-x-0 border-t-0",
+				children: [
+					"todos",
+					"hoje",
+					"em-breve",
+					"encerrados"
+				].map((f) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					onClick: () => setFilter(f),
+					className: `flex-1 py-3 font-bold text-xs uppercase tracking-widest transition-colors ${filter === f ? "bg-[color:var(--brand-yellow)] text-black" : "bg-white text-black/60 hover:bg-neutral-100"}`,
+					children: f === "em-breve" ? "EM BREVE" : f.toUpperCase()
+				}, f))
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "p-4 space-y-4",
+				children: filteredMatches.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "bg-white brutal-border p-6 text-center",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "font-display text-2xl",
+						children: "Nenhum jogo disponível"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm mt-2 uppercase font-bold tracking-wider text-black/60",
+						children: filter === "encerrados" ? "Aguardando resultados..." : "Volte em breve para palpitar"
+					})]
+				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-[10px] uppercase font-bold tracking-widest text-black/60",
+					children: "JOGOS DISPONÍVEIS"
+				}), filteredMatches.map((m) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameCard, {
+					match: m,
+					prediction: (data?.preds ?? []).find((x) => x.match_id === m.id),
+					started: new Date(m.match_date).getTime() <= now,
+					onSave: (a, b) => savePrediction(m.id, a, b)
+				}, m.id))] })
+			}),
+			completedMatches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "px-4 mt-6 space-y-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center gap-3",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex-1 h-[3px] bg-black" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+							className: "font-display text-3xl whitespace-nowrap",
+							children: "ÚLTIMOS RESULTADOS"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "flex-1 h-[3px] bg-black" })
+					]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "space-y-3",
+					children: [...completedMatches].sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()).slice(0, 10).map((m) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ResultBlock, {
+						match: m,
+						prediction: (data?.preds ?? []).find((x) => x.match_id === m.id)
+					}, m.id))
+				})]
+			})
+		]
+	});
+}
+function GameCard({ match, prediction, started, onSave }) {
+	const [editing, setEditing] = (0, import_react.useState)(!prediction && !started);
+	const [a, setA] = (0, import_react.useState)(prediction?.predicted_a ?? "");
+	const [b, setB] = (0, import_react.useState)(prediction?.predicted_b ?? "");
+	const [saving, setSaving] = (0, import_react.useState)(false);
+	const [justSaved, setJustSaved] = (0, import_react.useState)(false);
+	const hasPrediction = prediction != null;
+	const flagA = getFlag(match.team_a);
+	const flagB = getFlag(match.team_b);
+	async function handleSave() {
+		if (a === "" || b === "") return;
+		setSaving(true);
+		try {
+			await onSave(a, b);
+			setJustSaved(true);
+			setEditing(false);
+			setTimeout(() => setJustSaved(false), 2e3);
+		} finally {
+			setSaving(false);
+		}
+	}
+	if (started) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: "bg-white brutal-border brutal-shadow p-4",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "text-center space-y-1",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "font-display text-2xl",
+					children: [
+						match.team_a,
+						" ",
+						flagA
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "font-display text-lg text-black/40",
+					children: "VS"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "font-display text-2xl",
+					children: [
+						flagB,
+						" ",
+						match.team_b
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2",
+					children: formatMatchDate(match.match_date)
+				})
+			]
+		}), hasPrediction && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "border-t border-black/10 mt-3 pt-3 text-center",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-[10px] uppercase font-bold tracking-widest text-black/60",
+				children: "SEU PALPITE"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				className: "font-display text-4xl mt-1",
+				children: [
+					prediction.predicted_a,
+					" × ",
+					prediction.predicted_b
+				]
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "mt-3 bg-neutral-200 text-neutral-700 text-center py-3 font-display text-xl tracking-wider brutal-border",
+			children: "PALPITE ENCERRADO"
+		})] })]
+	});
+	if (!editing && hasPrediction) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: "bg-white brutal-border brutal-shadow-blue p-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "text-center space-y-1",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "font-display text-2xl",
+						children: [
+							match.team_a,
+							" ",
+							flagA
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "font-display text-lg text-black/40",
+						children: "VS"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "font-display text-2xl",
+						children: [
+							flagB,
+							" ",
+							match.team_b
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2",
+						children: formatMatchDate(match.match_date)
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "border-t border-black/10 mt-3 pt-3 text-center",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-[10px] uppercase font-bold tracking-widest text-black/60",
+					children: "SEU PALPITE"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+					className: "font-display text-4xl mt-1",
+					children: [
+						prediction.predicted_a,
+						" × ",
+						prediction.predicted_b
+					]
+				})]
+			}),
+			justSaved ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mt-3 bg-[color:var(--brand-green)] text-white text-center py-3 font-display text-xl tracking-wider brutal-border",
+				children: "✓ PALPITE SALVO"
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				onClick: () => {
+					setEditing(true);
+					setA(prediction.predicted_a);
+					setB(prediction.predicted_b);
+				},
+				className: "w-full mt-3 bg-[color:var(--brand-yellow)] text-black brutal-border brutal-shadow py-3 font-display text-xl tracking-wider transition-transform active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+				children: "EDITAR PALPITE"
+			})
+		]
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: "bg-white brutal-border brutal-shadow p-4",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "text-center space-y-1",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "font-display text-2xl",
+						children: [
+							match.team_a,
+							" ",
+							flagA
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "font-display text-lg text-black/40",
+						children: "VS"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						className: "font-display text-2xl",
+						children: [
+							flagB,
+							" ",
+							match.team_b
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2",
+						children: formatMatchDate(match.match_date)
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "border-t border-black/10 mt-3 pt-3 text-center",
+				children: [hasPrediction && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-[10px] uppercase font-bold tracking-widest text-black/60",
+					children: "SEU PALPITE"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-end justify-center gap-2 mt-2",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-col items-center gap-0.5",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none",
+								children: getAbbr(match.team_a)
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScoreInput, {
+								value: a,
+								onChange: setA,
+								ariaLabel: `Gols ${match.team_a}`
+							})]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-display text-3xl leading-none pb-2",
+							children: "×"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-col items-center gap-0.5",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none",
+								children: getAbbr(match.team_b)
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScoreInput, {
+								value: b,
+								onChange: setB,
+								ariaLabel: `Gols ${match.team_b}`
+							})]
+						})
+					]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				onClick: handleSave,
+				disabled: saving || a === "" || b === "",
+				className: "w-full mt-3 bg-[color:var(--brand-green)] text-white brutal-border brutal-shadow py-3 font-display text-xl tracking-wider transition-transform active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-50",
+				children: saving ? "Salvando..." : hasPrediction ? "SALVAR" : "SALVAR PALPITE"
+			})
+		]
+	});
+}
+function ResultBlock({ match, prediction }) {
+	const hasPrediction = prediction != null;
+	const isCorrect = prediction?.is_correct ?? false;
+	const points = prediction?.points_earned ?? 0;
+	const flagA = getFlag(match.team_a);
+	const flagB = getFlag(match.team_b);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: `brutal-border p-4 ${isCorrect ? "bg-[color:var(--brand-green)] text-white" : "bg-white text-black"}`,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "text-center space-y-1",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				className: "font-display text-3xl",
+				children: [
+					match.team_a,
+					" ",
+					flagA,
+					" ",
+					match.result_a,
+					" × ",
+					match.result_b,
+					" ",
+					flagB,
+					" ",
+					match.team_b
+				]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-[10px] uppercase font-bold tracking-widest opacity-80",
+				children: formatMatchDate(match.match_date)
+			})]
+		}), hasPrediction && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "border-t border-black/10 mt-3 pt-3 text-center",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-[10px] uppercase font-bold tracking-widest opacity-80",
+				children: "SEU PALPITE"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				className: `font-display text-3xl mt-1 ${isCorrect ? "text-white" : ""}`,
+				children: [
+					prediction.predicted_a,
+					" × ",
+					prediction.predicted_b
+				]
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "mt-3 flex items-center justify-center gap-3",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+				className: "font-display text-lg tracking-wider",
+				children: isCorrect ? "✓ ACERTOU" : "✗ ERROU"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+				className: `px-2 py-1 brutal-border font-bold text-xs tracking-wider ${isCorrect ? "bg-[color:var(--brand-yellow)] text-black" : "bg-black text-white"}`,
+				children: [isCorrect ? `+${points}` : "+0", " PTS"]
+			})]
+		})] })]
+	});
+}
+//#endregion
+export { PalpitesPage as component };
