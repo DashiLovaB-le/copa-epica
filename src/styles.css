@@ -103,3 +103,12 @@
 @utility brutal-shadow-blue {
   box-shadow: 6px 6px 0 0 var(--brand-blue);
 }
+
+@keyframes bounce-ball {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@utility animate-bounce-ball {
+  animation: bounce-ball 0.6s ease-in-out infinite;
+}

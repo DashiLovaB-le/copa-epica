@@ -70,12 +70,25 @@ function RankingPage() {
 
   if (isLoading) {
     return (
-      <div>
+      <div className="animate-in fade-in duration-200">
         <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
         </header>
-        <div className="p-4">
-          <p className="text-center font-bold uppercase mt-8">Carregando...</p>
+        <div className="p-4 space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="brutal-border bg-white p-4 animate-pulse">
+              <div className="h-5 w-24 bg-neutral-200 mb-2" />
+              <div className="h-8 w-32 bg-neutral-200" />
+            </div>
+          ))}
+          <div className="h-0 border-t-[3px] border-black" />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-3 animate-pulse">
+              <div className="w-8 h-8 bg-neutral-200" />
+              <div className="flex-1 h-5 bg-neutral-200" />
+              <div className="w-12 h-5 bg-neutral-200" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -189,14 +202,15 @@ function RankingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {participants.map((r) => {
+                    {participants.map((r, i) => {
                       const isMe = r.id === user.id;
                       return (
                         <tr
                           key={r.id}
-                          className={`border-b border-black/10 text-sm ${
-                            isMe ? "bg-[color:var(--brand-yellow)] ring-2 ring-black" : ""
+                          className={`animate-in fade-in slide-in-from-bottom-1 duration-200 border-b border-black/10 text-sm transition-all hover:bg-neutral-100 ${
+                            isMe ? "bg-[color:var(--brand-yellow)] ring-2 ring-black hover:bg-[color:var(--brand-yellow)]" : ""
                           }`}
+                          style={{ animationDelay: `${i * 40}ms` }}
                         >
                           <td className="p-3 text-center">
                             <span
@@ -277,7 +291,7 @@ function PodiumCard({
   const emoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
     <div
-      className={`brutal-border p-3 text-center flex flex-col items-center ${className}`}
+      className={`brutal-border p-3 text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#000] ${className}`}
     >
       <p className="text-2xl mb-1">{emoji[position]}</p>
       <p className="font-bold uppercase text-xs truncate w-full">{name}</p>

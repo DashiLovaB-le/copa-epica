@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScoreInput } from "@/components/ScoreInput";
 import { formatMatchDate, formatCountdown } from "@/lib/format";
+import { updateResults } from "@/lib/api/update-results.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/palpites")({
@@ -78,7 +79,7 @@ function getAbbr(name: string): string {
 type Filter = "todos" | "hoje" | "em-breve" | "encerrados";
 
 async function fetchData(userId: string) {
-  const [matches, preds, profileResult, allProfiles] = await Promise.all([
+  const [matches, preds, profileResult] = await Promise.all([
     supabase
       .from("copaepica_matches")
       .select("*")
@@ -91,33 +92,32 @@ async function fetchData(userId: string) {
       .from("copaepica_profiles")
       .select("id,display_name,points,correct_guesses")
       .eq("id", userId)
-      .single(),
-    supabase
-      .from("copaepica_profiles")
-      .select("id")
-      .order("points", { ascending: false })
-      .order("correct_guesses", { ascending: false }),
+      .maybeSingle(),
   ]);
   if (matches.error) throw matches.error;
   if (preds.error) throw preds.error;
   if (profileResult.error) throw profileResult.error;
-  if (allProfiles.error) throw allProfiles.error;
-
-  const profile = profileResult.data as ProfileRow;
-  const rank = (allProfiles.data ?? []).findIndex((p) => p.id === userId) + 1;
 
   return {
     matches: (matches.data ?? []) as MatchRow[],
     preds: (preds.data ?? []) as PredictionRow[],
-    profile,
-    rank: rank > 0 ? rank : null,
+    profile: profileResult.data as ProfileRow | null,
   };
+}
+
+function BouncingBall() {
+  return (
+    <span className="inline-flex items-center justify-center animate-bounce-ball text-xl leading-none">
+      ⚽
+    </span>
+  );
 }
 
 function PalpitesPage() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("todos");
+  const [updating, setUpdating] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["palpites", user.id],
@@ -137,31 +137,25 @@ function PalpitesPage() {
         { event: "*", schema: "public", table: "copaepica_predictions" },
         () => qc.invalidateQueries({ queryKey: ["palpites"] }),
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_profiles" },
-        () => qc.invalidateQueries({ queryKey: ["palpites"] }),
-      )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
   const now = useMemo(() => Date.now(), []);
 
+  const allMatches = data?.matches ?? [];
+
   const availableMatches = useMemo(
-    () => (data?.matches ?? []).filter((m) => m.result_a === null),
-    [data],
-  );
-  const completedMatches = useMemo(
-    () => (data?.matches ?? []).filter((m) => m.result_a !== null),
-    [data],
+    () => allMatches.filter((m) => m.result_a === null),
+    [allMatches],
   );
 
   const currentRound = useMemo(() => {
     if (availableMatches.length > 0) return availableMatches[0].round_number;
-    if (completedMatches.length > 0) return completedMatches[completedMatches.length - 1].round_number;
+    const lastCompleted = allMatches.filter((m) => m.result_a !== null).pop();
+    if (lastCompleted) return lastCompleted.round_number;
     return 1;
-  }, [availableMatches, completedMatches]);
+  }, [availableMatches, allMatches]);
 
   const nextMatchCountdown = useMemo(() => {
     const nextMatch = availableMatches.find(
@@ -178,16 +172,36 @@ function PalpitesPage() {
     ).getTime();
     const endOfToday = startOfToday + 86400000;
 
-    return availableMatches.filter((m) => {
+    return allMatches.filter((m) => {
       const matchTime = new Date(m.match_date).getTime();
       switch (filter) {
         case "todos": return true;
         case "hoje": return matchTime >= startOfToday && matchTime < endOfToday;
-        case "em-breve": return matchTime > now && matchTime <= endOfToday + 86400000;
-        case "encerrados": return matchTime <= now;
+        case "em-breve": return matchTime > now && m.result_a === null;
+        case "encerrados": return m.result_a !== null;
       }
     });
-  }, [availableMatches, filter, now]);
+  }, [allMatches, filter, now]);
+
+  async function handleUpdate() {
+    setUpdating(true);
+    try {
+      const result = await updateResults();
+      const total = result.updated.length + result.failed.length;
+      if (result.updated.length > 0) {
+        toast.success(`${result.updated.length}/${total} jogos atualizados`);
+      } else if (result.failed.length > 0) {
+        toast.info(`Nenhum resultado novo encontrado (${result.failed.length} pendentes)`);
+      } else {
+        toast.info("Nenhum jogo pendente para atualizar");
+      }
+      qc.invalidateQueries({ queryKey: ["palpites"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao atualizar resultados");
+    } finally {
+      setUpdating(false);
+    }
+  }
 
   async function savePrediction(matchId: string, a: number, b: number) {
     const { error } = await supabase
@@ -237,16 +251,26 @@ function PalpitesPage() {
   return (
     <div className="pb-4">
       <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
-        <h1 className="text-4xl font-display tracking-wider leading-none">BOLÃO DA COPA</h1>
-        <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
-          Palpites da Rodada {currentRound}
-        </p>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-display tracking-wider leading-none">BOLÃO DA COPA</h1>
+            <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
+              Palpites da Rodada {currentRound}
+            </p>
+          </div>
+          <button
+            onClick={handleUpdate}
+            disabled={updating}
+            className="flex-shrink-0 bg-[color:var(--brand-green)] text-white brutal-border brutal-shadow px-4 py-2 font-display text-lg tracking-wider active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow flex items-center justify-center min-w-[120px]"
+          >
+            {updating ? <BouncingBall /> : "ATUALIZAR"}
+          </button>
+        </div>
       </header>
 
       <div className="bg-black text-white brutal-border border-x-0 border-t-0 p-4 flex items-center justify-between">
-        {data?.rank ? (
+        {data?.profile ? (
           <div className="flex items-center gap-2">
-            <span className="font-display text-2xl">#{data.rank}º</span>
             <span className="text-xs uppercase font-bold tracking-widest opacity-80">
               {data.profile.points} pts
             </span>
@@ -278,62 +302,60 @@ function PalpitesPage() {
       <div className="p-4 space-y-4">
         {filteredMatches.length === 0 ? (
           <div className="bg-white brutal-border p-6 text-center">
-            <p className="font-display text-2xl">Nenhum jogo disponível</p>
+            <p className="font-display text-2xl">Nenhum jogo encontrado</p>
             <p className="text-sm mt-2 uppercase font-bold tracking-wider text-black/60">
-              {filter === "encerrados"
-                ? "Aguardando resultados..."
-                : "Volte em breve para palpitar"}
+              {filter === "hoje"
+                ? "Nenhum jogo hoje"
+                : filter === "encerrados"
+                  ? "Aguardando resultados..."
+                  : "Volte em breve para palpitar"}
             </p>
           </div>
         ) : (
           <>
             <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
-              JOGOS DISPONÍVEIS
+              {filter === "todos"
+                ? "TODOS OS JOGOS"
+                : filter === "hoje"
+                  ? "JOGOS DE HOJE"
+                  : filter === "em-breve"
+                    ? "PRÓXIMOS JOGOS"
+                    : "JOGOS ENCERRADOS"}
             </p>
-            {filteredMatches.map((m) => (
-              <GameCard
-                key={m.id}
-                match={m}
-                prediction={
-                  (data?.preds ?? []).find((x) => x.match_id === m.id)
-                }
-                started={new Date(m.match_date).getTime() <= now}
-                onSave={(a, b) => savePrediction(m.id, a, b)}
-              />
-            ))}
+            {filteredMatches.map((m, i) =>
+              m.result_a !== null ? (
+                <div
+                  key={m.id}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <ResultBlock
+                    match={m}
+                    prediction={
+                      (data?.preds ?? []).find((x) => x.match_id === m.id)
+                    }
+                  />
+                </div>
+              ) : (
+                <div
+                  key={m.id}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <GameCard
+                    match={m}
+                    prediction={
+                      (data?.preds ?? []).find((x) => x.match_id === m.id)
+                    }
+                    started={new Date(m.match_date).getTime() <= now}
+                    onSave={(a, b) => savePrediction(m.id, a, b)}
+                  />
+                </div>
+              ),
+            )}
           </>
         )}
       </div>
-
-      {completedMatches.length > 0 && (
-        <div className="px-4 mt-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-[3px] bg-black" />
-            <h2 className="font-display text-3xl whitespace-nowrap">
-              ÚLTIMOS RESULTADOS
-            </h2>
-            <div className="flex-1 h-[3px] bg-black" />
-          </div>
-          <div className="space-y-3">
-            {[...completedMatches]
-              .sort(
-                (a, b) =>
-                  new Date(b.match_date).getTime() -
-                  new Date(a.match_date).getTime(),
-              )
-              .slice(0, 10)
-              .map((m) => (
-                <ResultBlock
-                  key={m.id}
-                  match={m}
-                  prediction={
-                    (data?.preds ?? []).find((x) => x.match_id === m.id)
-                  }
-                />
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -354,6 +376,11 @@ function GameCard({
   const [b, setB] = useState<number | "">(prediction?.predicted_b ?? "");
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    return () => { mounted.current = false; };
+  }, []);
 
   const hasPrediction = prediction != null;
   const flagA = getFlag(match.team_a);
@@ -364,11 +391,12 @@ function GameCard({
     setSaving(true);
     try {
       await onSave(a, b);
+      if (!mounted.current) return;
       setJustSaved(true);
       setEditing(false);
-      setTimeout(() => setJustSaved(false), 2000);
+      setTimeout(() => { if (mounted.current) setJustSaved(false); }, 2000);
     } finally {
-      setSaving(false);
+      if (mounted.current) setSaving(false);
     }
   }
 
