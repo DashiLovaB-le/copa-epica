@@ -1,0 +1,402 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { z } from "zod";
+
+export const Route = createFileRoute("/_authenticated/perfil")({
+  head: () => ({ meta: [{ title: "Perfil — Copa Épica" }] }),
+  component: PerfilPage,
+});
+
+type Profile = {
+  id: string;
+  display_name: string;
+  points: number;
+  correct_guesses: number;
+  incorrect_guesses: number;
+  created_at: string;
+};
+
+type RoundSummary = {
+  round_number: number;
+  round_points: number;
+};
+
+const nameSchema = z.string().trim().min(2, "Mínimo 2 caracteres").max(40, "Máximo 40");
+
+async function fetchProfile(id: string): Promise<Profile> {
+  const { data, error } = await supabase
+    .from("copaepica_profiles")
+    .select("id,display_name,points,correct_guesses,incorrect_guesses,created_at")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data as Profile;
+}
+
+async function fetchRank(id: string) {
+  const { data, error } = await supabase
+    .from("copaepica_profiles")
+    .select("id")
+    .order("points", { ascending: false })
+    .order("correct_guesses", { ascending: false });
+  if (error) throw error;
+  const idx = (data ?? []).findIndex((p) => p.id === id);
+  return idx === -1 ? null : idx + 1;
+}
+
+async function fetchRoundHistory(userId: string): Promise<RoundSummary[]> {
+  const [mRes, pRes] = await Promise.all([
+    supabase
+      .from("copaepica_matches")
+      .select("id, round_number")
+      .not("result_a", "is", null)
+      .not("result_b", "is", null)
+      .order("round_number", { ascending: true }),
+    supabase
+      .from("copaepica_predictions")
+      .select("match_id, points_earned")
+      .eq("user_id", userId),
+  ]);
+  if (mRes.error) throw mRes.error;
+  if (pRes.error) throw pRes.error;
+
+  const matchIdsWithPreds = new Set(pRes.data?.map((p) => p.match_id) ?? []);
+  const ptsByMatch = new Map(
+    pRes.data?.map((p) => [p.match_id, p.points_earned ?? 0]) ?? [],
+  );
+  const acc = new Map<number, number>();
+
+  for (const m of mRes.data ?? []) {
+    if (matchIdsWithPreds.has(m.id)) {
+      acc.set(
+        m.round_number,
+        (acc.get(m.round_number) ?? 0) + (ptsByMatch.get(m.id) ?? 0),
+      );
+    }
+  }
+
+  return Array.from(acc.entries())
+    .map(([rn, pts]) => ({ round_number: rn, round_points: pts }))
+    .sort((a, b) => b.round_number - a.round_number)
+    .slice(0, 3)
+    .reverse();
+}
+
+function PerfilPage() {
+  const { user } = Route.useRouteContext();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [name, setName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user.id],
+    queryFn: () => fetchProfile(user.id),
+  });
+  const { data: rank } = useQuery({
+    queryKey: ["my-rank", user.id],
+    queryFn: () => fetchRank(user.id),
+  });
+  const { data: roundHistory } = useQuery({
+    queryKey: ["round-history", user.id],
+    queryFn: () => fetchRoundHistory(user.id),
+  });
+
+  async function handleSave() {
+    const parsed = nameSchema.safeParse(name);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    const { error } = await supabase
+      .from("copaepica_profiles")
+      .update({ display_name: parsed.data })
+      .eq("id", user.id);
+    if (error) return toast.error(error.message);
+    toast.success("Perfil atualizado");
+    setEditing(false);
+    qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    qc.invalidateQueries({ queryKey: ["ranking"] });
+  }
+
+  async function handleChangePassword() {
+    if (!newPassword) {
+      toast.error("Digite a nova senha");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Nova senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return toast.error(error.message);
+    toast.success("Senha alterada com sucesso");
+    setChangingPassword(false);
+    setNewPassword("");
+  }
+
+  async function handleLogout() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  const total =
+    (profile?.correct_guesses ?? 0) + (profile?.incorrect_guesses ?? 0);
+  const accuracy =
+    total > 0
+      ? Math.round(((profile?.correct_guesses ?? 0) / total) * 100)
+      : 0;
+
+  const joinedAt = profile?.created_at
+    ? (() => {
+        const d = new Date(profile.created_at);
+        const month = d.toLocaleDateString("pt-BR", { month: "long" });
+        return `${month.charAt(0).toUpperCase() + month.slice(1)}/${d.getFullYear()}`;
+      })()
+    : "";
+
+  const achievements = [
+    { icon: "🏆", label: "Primeiro Acerto", unlocked: (profile?.correct_guesses ?? 0) > 0 },
+    { icon: "🎯", label: "5 Acertos", unlocked: (profile?.correct_guesses ?? 0) >= 5 },
+    { icon: "⭐", label: "Top 10", unlocked: (rank ?? Infinity) <= 10 },
+    { icon: "💯", label: "100% Aproveitamento", unlocked: accuracy === 100 },
+  ];
+
+  return (
+    <div className="pb-4">
+      <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+        <h1 className="text-4xl font-display tracking-wider leading-none">
+          MEU PERFIL
+        </h1>
+        <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
+          Quem sou eu no bolão e qual é meu desempenho geral?
+        </p>
+      </header>
+
+      <div className="p-4 space-y-6">
+        {/* Informações do Usuário */}
+        <div className="bg-white brutal-border p-4 space-y-2">
+          <p className="font-display text-3xl">
+            {profile?.display_name ?? "..."}
+          </p>
+          <p className="text-sm text-black/60">{user.email}</p>
+          {joinedAt && (
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/40">
+              Participante desde {joinedAt}
+            </p>
+          )}
+        </div>
+
+        {/* Estatísticas Principais — grid 2x2 */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+              🏆 PONTOS
+            </p>
+            <p className="font-display text-4xl leading-tight mt-1">
+              {profile?.points ?? 0}
+            </p>
+          </div>
+          <div className="bg-white brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+              🎯 ACERTOS
+            </p>
+            <p className="font-display text-4xl leading-tight mt-1">
+              {profile?.correct_guesses ?? 0}
+            </p>
+          </div>
+          <div className="bg-white brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+              ❌ ERROS
+            </p>
+            <p className="font-display text-4xl leading-tight mt-1">
+              {profile?.incorrect_guesses ?? 0}
+            </p>
+          </div>
+          <div className="bg-white brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+              🏅 POSIÇÃO
+            </p>
+            <p className="font-display text-4xl leading-tight mt-1">
+              {rank ? `#${rank}` : "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Aproveitamento */}
+        <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+            APROVEITAMENTO
+          </p>
+          <p className="font-display text-5xl">{accuracy}%</p>
+          <div className="border-t border-black/10 pt-2 text-[10px] uppercase font-bold tracking-widest text-black/40 space-y-0.5">
+            <p>{profile?.correct_guesses ?? 0} acertos</p>
+            <p>{total} palpites</p>
+          </div>
+        </div>
+
+        {/* Últimas Rodadas */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-[3px] bg-black" />
+            <h2 className="font-display text-2xl whitespace-nowrap">
+              ÚLTIMAS RODADAS
+            </h2>
+            <div className="flex-1 h-[3px] bg-black" />
+          </div>
+
+          {roundHistory && roundHistory.length > 0 ? (
+            <div className="space-y-2">
+              {roundHistory.map((r) => (
+                <div
+                  key={r.round_number}
+                  className="bg-white brutal-border p-3 flex items-center justify-between"
+                >
+                  <span className="font-bold text-xs uppercase tracking-widest">
+                    Rodada {r.round_number}
+                  </span>
+                  <span className="font-display text-xl text-[color:var(--brand-green)]">
+                    +{r.round_points}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white brutal-border p-4 text-center">
+              <p className="font-display text-lg text-black/40">
+                Nenhuma rodada finalizada
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Conquistas */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-[3px] bg-black" />
+            <h2 className="font-display text-2xl whitespace-nowrap">
+              CONQUISTAS
+            </h2>
+            <div className="flex-1 h-[3px] bg-black" />
+          </div>
+
+          <div className="bg-white brutal-border p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {achievements.map((a) => (
+                <div
+                  key={a.label}
+                  className={`p-3 text-center brutal-border ${
+                    a.unlocked
+                      ? "bg-[color:var(--brand-yellow)]"
+                      : "bg-neutral-100 opacity-40"
+                  }`}
+                >
+                  <p className="text-2xl">{a.icon}</p>
+                  <p className="text-[10px] uppercase font-bold tracking-widest mt-1">
+                    {a.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Configurações */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-[3px] bg-black" />
+            <h2 className="font-display text-2xl whitespace-nowrap">
+              CONFIGURAÇÕES
+            </h2>
+            <div className="flex-1 h-[3px] bg-black" />
+          </div>
+
+          <div className="bg-white brutal-border p-4 space-y-3">
+            {editing ? (
+              <div className="space-y-3">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={profile?.display_name}
+                  maxLength={40}
+                  className="w-full brutal-border p-3 font-display text-2xl focus:outline-none focus:bg-[color:var(--brand-yellow)]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 bg-[color:var(--brand-green)] text-white brutal-border py-3 font-display text-xl"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="flex-1 bg-white text-black brutal-border py-3 font-display text-xl"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setName(profile?.display_name ?? "");
+                  setEditing(true);
+                }}
+                className="w-full bg-white text-black brutal-border py-3 font-display text-xl tracking-wider"
+              >
+                ✏️ Editar Perfil
+              </button>
+            )}
+
+            {changingPassword ? (
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Nova senha"
+                  className="w-full brutal-border p-3 font-sans text-sm focus:outline-none focus:bg-[color:var(--brand-yellow)]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleChangePassword}
+                    className="flex-1 bg-[color:var(--brand-green)] text-white brutal-border py-3 font-display text-xl"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => setChangingPassword(false)}
+                    className="flex-1 bg-white text-black brutal-border py-3 font-display text-xl"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setChangingPassword(true)}
+                className="w-full bg-white text-black brutal-border py-3 font-display text-xl tracking-wider"
+              >
+                🔑 Alterar Senha
+              </button>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="w-full bg-black text-[color:var(--brand-yellow)] brutal-border brutal-shadow py-3 font-display text-xl tracking-wider"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
