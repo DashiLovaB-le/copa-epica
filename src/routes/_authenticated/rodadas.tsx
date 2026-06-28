@@ -7,6 +7,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { updateResults } from "@/lib/api/update-results.functions";
 import { toast } from "sonner";
 
+function BouncingBall() {
+  return (
+    <span className="inline-flex items-center justify-center animate-bounce-ball text-xl leading-none">
+      ⚽
+    </span>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/rodadas")({
   head: () => ({ meta: [{ title: "Rodadas — Copa Épica" }] }),
   component: RodadasPage,
@@ -135,8 +143,27 @@ function RodadasPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="font-display text-3xl animate-pulse">Carregando...</p>
+      <div className="pb-4 animate-in fade-in duration-200">
+        <PageHeader title="RODADAS" subtitle="Histórico de resultados" />
+        <div className="flex brutal-border border-x-0 border-t-0">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex-1 h-11 animate-pulse bg-neutral-200" />
+          ))}
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="bg-white brutal-border p-4 space-y-2 animate-pulse">
+            <div className="h-5 w-32 bg-neutral-200" />
+            <div className="h-5 w-40 bg-neutral-200" />
+            <div className="h-5 w-36 bg-neutral-200" />
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="brutal-border bg-white p-4 animate-pulse">
+              <div className="h-8 w-72 mx-auto bg-neutral-200" />
+              <div className="h-0 border-t border-black/10 mt-3 pt-3" />
+              <div className="h-8 w-32 mx-auto bg-neutral-200 mt-3" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -152,7 +179,7 @@ function RodadasPage() {
             disabled={updating}
             className="flex-shrink-0 bg-[color:var(--brand-green)] text-white brutal-border brutal-shadow px-4 py-2 font-display text-lg tracking-wider active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow"
           >
-            {updating ? "..." : "ATUALIZAR"}
+            {updating ? <BouncingBall /> : "ATUALIZAR"}
           </button>
         }
       />

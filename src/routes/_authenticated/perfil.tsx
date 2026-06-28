@@ -94,18 +94,68 @@ function PerfilPage() {
   const [name, setName] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  const { data: profile } = useQuery({
+  const { data: profile, isPending: profileLoading } = useQuery({
     queryKey: ["profile", user.id],
     queryFn: () => fetchProfile(user.id),
   });
-  const { data: rank } = useQuery({
+  const { data: rank, isPending: rankLoading } = useQuery({
     queryKey: ["my-rank", user.id],
     queryFn: () => fetchRank(user.id),
   });
-  const { data: roundHistory } = useQuery({
+  const { data: roundHistory, isPending: historyLoading } = useQuery({
     queryKey: ["round-history", user.id],
     queryFn: () => fetchRoundHistory(user.id),
   });
+
+  const loading = profileLoading || rankLoading || historyLoading;
+  const created = useRef(false);
+
+  useEffect(() => {
+    if (profile !== null || created.current) return;
+    created.current = true;
+    const displayName = user.email?.split("@")[0] ?? "User";
+    supabase.from("copaepica_profiles").insert({
+      id: user.id,
+      display_name: displayName,
+      points: 0,
+      correct_guesses: 0,
+      incorrect_guesses: 0,
+    }).then(({ error }) => {
+      if (error) console.error("Erro ao criar perfil:", error);
+      qc.invalidateQueries({ queryKey: ["profile", user.id] });
+    });
+  }, [profile, user.id, user.email, qc]);
+
+  if (loading) {
+    return (
+      <div className="pb-4 animate-in fade-in duration-200">
+        <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+          <h1 className="text-4xl font-display tracking-wider leading-none">MEU PERFIL</h1>
+          <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
+            ...
+          </p>
+        </header>
+        <div className="p-4 space-y-6">
+          <div className="bg-white brutal-border p-4 space-y-2 animate-pulse">
+            <div className="h-9 w-48 bg-neutral-200" />
+            <div className="h-4 w-64 bg-neutral-200" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white brutal-border p-4 animate-pulse">
+                <div className="h-4 w-20 bg-neutral-200 mb-2" />
+                <div className="h-10 w-16 bg-neutral-200" />
+              </div>
+            ))}
+          </div>
+          <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2 animate-pulse">
+            <div className="h-4 w-32 mx-auto bg-neutral-200" />
+            <div className="h-12 w-24 mx-auto bg-neutral-200" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSave() {
     const parsed = nameSchema.safeParse(name);
