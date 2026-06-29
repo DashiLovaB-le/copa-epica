@@ -13,19 +13,70 @@ type Profile = {
   display_name: string;
   points: number;
   correct_guesses: number;
+  total_score_diff: number;
+  first_prediction_at: string;
 };
 
 type ProfileWithRank = Profile & { rank: number };
 
 async function fetchRanking() {
-  const { data, error } = await supabase
-    .from("copaepica_profiles")
-    .select("id,display_name,points,correct_guesses")
-    .order("points", { ascending: false })
-    .order("correct_guesses", { ascending: false })
-    .limit(100);
-  if (error) throw error;
-  return (data ?? []).map((p, i) => ({ ...p, rank: i + 1 })) as ProfileWithRank[];
+  const [profilesRes, predictionsRes, matchesRes] = await Promise.all([
+    supabase
+      .from("copaepica_profiles")
+      .select("id,display_name,points,correct_guesses")
+      .limit(100),
+    supabase
+      .from("copaepica_predictions")
+      .select("user_id, match_id, predicted_a, predicted_b, created_at"),
+    supabase
+      .from("copaepica_matches")
+      .select("id, result_a, result_b")
+      .not("result_a", "is", null),
+  ]);
+  if (profilesRes.error) throw profilesRes.error;
+  if (predictionsRes.error) throw predictionsRes.error;
+  if (matchesRes.error) throw matchesRes.error;
+
+  const resultMap = new Map(
+    (matchesRes.data ?? []).map((m) => [m.id, m]),
+  );
+
+  const scoreDiffMap = new Map<string, number>();
+  const firstPredMap = new Map<string, string>();
+
+  for (const pred of predictionsRes.data ?? []) {
+    const match = resultMap.get(pred.match_id);
+    if (!match) continue;
+    const diff =
+      Math.abs(pred.predicted_a - match.result_a!) +
+      Math.abs(pred.predicted_b - match.result_b!);
+    scoreDiffMap.set(
+      pred.user_id,
+      (scoreDiffMap.get(pred.user_id) ?? 0) + diff,
+    );
+    const existing = firstPredMap.get(pred.user_id);
+    if (!existing || pred.created_at < existing) {
+      firstPredMap.set(pred.user_id, pred.created_at);
+    }
+  }
+
+  const ranked = (profilesRes.data ?? [])
+    .map((p) => ({
+      ...p,
+      total_score_diff: scoreDiffMap.get(p.id) ?? 0,
+      first_prediction_at: firstPredMap.get(p.id) ?? "",
+    }))
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (a.total_score_diff !== b.total_score_diff)
+        return a.total_score_diff - b.total_score_diff;
+      if (a.first_prediction_at && b.first_prediction_at)
+        return a.first_prediction_at.localeCompare(b.first_prediction_at);
+      return 0;
+    })
+    .map((p, i) => ({ ...p, rank: i + 1 }));
+
+  return ranked as ProfileWithRank[];
 }
 
 async function fetchLatestRound() {

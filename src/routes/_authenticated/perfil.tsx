@@ -37,13 +37,60 @@ async function fetchProfile(id: string): Promise<Profile> {
 }
 
 async function fetchRank(id: string) {
-  const { data, error } = await supabase
-    .from("copaepica_profiles")
-    .select("id")
-    .order("points", { ascending: false })
-    .order("correct_guesses", { ascending: false });
-  if (error) throw error;
-  const idx = (data ?? []).findIndex((p) => p.id === id);
+  const [profilesRes, predictionsRes, matchesRes] = await Promise.all([
+    supabase.from("copaepica_profiles").select("id,points,correct_guesses"),
+    supabase
+      .from("copaepica_predictions")
+      .select("user_id, match_id, predicted_a, predicted_b, created_at"),
+    supabase
+      .from("copaepica_matches")
+      .select("id, result_a, result_b")
+      .not("result_a", "is", null),
+  ]);
+  if (profilesRes.error) throw profilesRes.error;
+  if (predictionsRes.error) throw predictionsRes.error;
+  if (matchesRes.error) throw matchesRes.error;
+
+  const resultMap = new Map(
+    (matchesRes.data ?? []).map((m) => [m.id, m]),
+  );
+
+  const scoreDiffMap = new Map<string, number>();
+  const firstPredMap = new Map<string, string>();
+
+  for (const pred of predictionsRes.data ?? []) {
+    const match = resultMap.get(pred.match_id);
+    if (!match) continue;
+    const diff =
+      Math.abs(pred.predicted_a - match.result_a!) +
+      Math.abs(pred.predicted_b - match.result_b!);
+    scoreDiffMap.set(
+      pred.user_id,
+      (scoreDiffMap.get(pred.user_id) ?? 0) + diff,
+    );
+    const existing = firstPredMap.get(pred.user_id);
+    if (!existing || pred.created_at < existing) {
+      firstPredMap.set(pred.user_id, pred.created_at);
+    }
+  }
+
+  const sorted = (profilesRes.data ?? [])
+    .map((p) => ({
+      id: p.id,
+      points: p.points,
+      total_score_diff: scoreDiffMap.get(p.id) ?? 0,
+      first_prediction_at: firstPredMap.get(p.id) ?? "",
+    }))
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (a.total_score_diff !== b.total_score_diff)
+        return a.total_score_diff - b.total_score_diff;
+      if (a.first_prediction_at && b.first_prediction_at)
+        return a.first_prediction_at.localeCompare(b.first_prediction_at);
+      return 0;
+    });
+
+  const idx = sorted.findIndex((p) => p.id === id);
   return idx === -1 ? null : idx + 1;
 }
 
