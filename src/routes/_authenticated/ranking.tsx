@@ -213,6 +213,7 @@ function RankingPage() {
                       name={top3[1].display_name}
                       points={top3[1].points}
                       className="bg-[color:var(--brand-yellow)] text-black"
+                      heightClass="pt-6 pb-2"
                     />
                   )}
                 </div>
@@ -222,8 +223,8 @@ function RankingPage() {
                       position={1}
                       name={top3[0].display_name}
                       points={top3[0].points}
-                      big
                       className="bg-[color:var(--brand-green)] text-white"
+                      heightClass="pt-10 pb-2"
                     />
                   )}
                 </div>
@@ -234,6 +235,7 @@ function RankingPage() {
                       name={top3[2].display_name}
                       points={top3[2].points}
                       className="bg-white text-black"
+                      heightClass="pt-3 pb-2"
                     />
                   )}
                 </div>
@@ -343,23 +345,23 @@ function PodiumCard({
   position,
   name,
   points,
-  big,
+  heightClass,
   className,
 }: {
   position: 1 | 2 | 3;
   name: string;
   points: number;
-  big?: boolean;
+  heightClass: string;
   className: string;
 }) {
   const emoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
     <div
-      className={`brutal-border text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#000] ${big ? "p-5" : "p-3"} ${className}`}
+      className={`brutal-border w-full text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[4px_4px_0_0_#000] ${heightClass} ${className}`}
     >
-      <p className={big ? "text-3xl mb-1" : "text-2xl mb-1"}>{emoji[position]}</p>
-      <p className="font-bold uppercase text-xs truncate w-full">{name}</p>
-      <p className={`font-display leading-none ${big ? "text-3xl mt-1" : "text-xl"} `}>{points} PTS</p>
+      <p className="text-lg mb-0.5 leading-none">{emoji[position]}</p>
+      <p className="font-bold uppercase text-[10px] truncate w-full leading-tight">{name}</p>
+      <p className="font-display text-lg leading-none mt-0.5">{points} PTS</p>
     </div>
   );
 }
