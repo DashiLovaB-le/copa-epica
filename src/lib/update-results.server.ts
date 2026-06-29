@@ -64,6 +64,14 @@ function normalizeName(name: string) {
     .trim();
 }
 
+function toPtName(enName: string): string {
+  return REVERSE_TEAM_MAP[enName] ?? enName;
+}
+
+function toEnName(ptName: string): string {
+  return TEAM_MAP[ptName] ?? ptName;
+}
+
 function teamNamesMatch(a: string, b: string) {
   const na = normalizeName(a);
   const nb = normalizeName(b);
@@ -88,8 +96,8 @@ function extractScore(match: any) {
   return { home: src.home, away: src.away };
 }
 
-function toPtName(enName: string): string {
-  return REVERSE_TEAM_MAP[enName] ?? enName;
+function matchKey(teamA: string, teamB: string, round: number) {
+  return `${teamA}||${teamB}||${round}`;
 }
 
 type UpdateResult = {
@@ -116,6 +124,7 @@ export async function updateMatchResults(): Promise<UpdateResult> {
 
   const result: UpdateResult = { synced: [], updated: [], failed: [] };
 
+  // 1. Fetch all matches from API
   let apiMatches: any[];
   try {
     const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches`;
@@ -132,6 +141,22 @@ export async function updateMatchResults(): Promise<UpdateResult> {
     throw new Error(`API error: ${err.message}`);
   }
 
+  // 2. Fetch all existing matches from DB (single query)
+  const { data: dbMatches, error: fetchErr } = await sb
+    .from("copaepica_matches")
+    .select("id, team_a, team_b, round_number, result_a, result_b");
+
+  if (fetchErr) throw new Error(`DB fetch error: ${fetchErr.message}`);
+
+  const existingMap = new Map<string, typeof dbMatches[0]>();
+  for (const m of dbMatches ?? []) {
+    existingMap.set(matchKey(m.team_a, m.team_b, m.round_number), m);
+  }
+
+  // 3. Classify each API match
+  const toInsert: any[] = [];
+  const toUpdate: { id: string; result_a: number; result_b: number; label: string }[] = [];
+
   for (const apiMatch of apiMatches) {
     const homeEn = apiMatch.homeTeam?.name ?? "";
     const awayEn = apiMatch.awayTeam?.name ?? "";
@@ -147,50 +172,61 @@ export async function updateMatchResults(): Promise<UpdateResult> {
     const score = extractScore(apiMatch);
     const isFinished = apiMatch.status === "FINISHED";
 
-    const { data: existing } = await sb
-      .from("copaepica_matches")
-      .select("id, result_a, result_b")
-      .eq("team_a", teamA)
-      .eq("team_b", teamB)
-      .eq("round_number", roundNumber)
-      .maybeSingle();
+    const teamAen = toEnName(teamA);
+    const isHomeA = teamNamesMatch(teamAen, homeEn);
+    const isAwayA = !isHomeA && teamNamesMatch(teamAen, awayEn);
+
+    const key = matchKey(teamA, teamB, roundNumber);
+    const existing = existingMap.get(key);
 
     if (existing) {
       if (isFinished && score && (existing.result_a === null || existing.result_b === null)) {
-        const homeName = apiMatch.homeTeam?.name ?? "";
-        const awayName = apiMatch.awayTeam?.name ?? "";
-        const isHomeA = teamNamesMatch(normalizeName(teamA), normalizeName(homeName));
-        const resultA = isHomeA ? score.home : score.away;
-        const resultB = isHomeA ? score.away : score.home;
-
-        const { error: updateErr } = await sb
-          .from("copaepica_matches")
-          .update({ result_a: resultA, result_b: resultB })
-          .eq("id", existing.id);
-
-        if (updateErr) {
-          result.failed.push({ match: `${teamA} vs ${teamB}`, reason: `DB error: ${updateErr.message}` });
-        } else {
-          result.updated.push(`${teamA} ${resultA}×${resultB} ${teamB}`);
-        }
+        toUpdate.push({
+          id: existing.id,
+          result_a: isHomeA ? score.home : score.away,
+          result_b: isHomeA ? score.away : score.home,
+          label: `${teamA} ${isHomeA ? score.home : score.away}×${isHomeA ? score.away : score.home} ${teamB}`,
+        });
       }
     } else {
-      const { error: insertErr } = await sb
-        .from("copaepica_matches")
-        .insert({
-          team_a: teamA,
-          team_b: teamB,
-          match_date: matchDate,
-          round_number: roundNumber,
-          result_a: (isFinished && score) ? (teamNamesMatch(normalizeName(teamA), normalizeName(apiMatch.homeTeam?.name ?? "")) ? score.home : score.away) : null,
-          result_b: (isFinished && score) ? (teamNamesMatch(normalizeName(teamA), normalizeName(apiMatch.homeTeam?.name ?? "")) ? score.away : score.home) : null,
-        });
-
-      if (insertErr) {
-        result.failed.push({ match: `${teamA} vs ${teamB}`, reason: `DB insert error: ${insertErr.message}` });
-      } else {
-        result.synced.push(`${teamA} vs ${teamB}`);
+      if (!isHomeA && !isAwayA) {
+        result.failed.push({ match: `${teamA} vs ${teamB}`, reason: "Não foi possível determinar time casa/fora" });
+        continue;
       }
+      toInsert.push({
+        team_a: teamA,
+        team_b: teamB,
+        match_date: matchDate,
+        round_number: roundNumber,
+        result_a: (isFinished && score) ? (isHomeA ? score.home : score.away) : null,
+        result_b: (isFinished && score) ? (isHomeA ? score.away : score.home) : null,
+      });
+      result.synced.push(`${teamA} vs ${teamB}`);
+    }
+  }
+
+  // 4. Batch insert new matches
+  if (toInsert.length > 0) {
+    const { error: insertErr } = await sb.from("copaepica_matches").insert(toInsert);
+    if (insertErr) {
+      for (const m of toInsert) {
+        result.failed.push({ match: `${m.team_a} vs ${m.team_b}`, reason: `Insert error: ${insertErr.message}` });
+      }
+      result.synced = [];
+    }
+  }
+
+  // 5. Batch update results
+  for (const u of toUpdate) {
+    const { error: updateErr } = await sb
+      .from("copaepica_matches")
+      .update({ result_a: u.result_a, result_b: u.result_b })
+      .eq("id", u.id);
+
+    if (updateErr) {
+      result.failed.push({ match: u.label, reason: `Update error: ${updateErr.message}` });
+    } else {
+      result.updated.push(u.label);
     }
   }
 
