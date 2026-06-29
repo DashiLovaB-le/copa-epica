@@ -52,16 +52,16 @@ const TEAM_MAP: Record<string, string> = {
   "Panamá": "Panama",
 };
 
+const REVERSE_TEAM_MAP = Object.fromEntries(
+  Object.entries(TEAM_MAP).map(([pt, en]) => [en, pt]),
+);
+
 function normalizeName(name: string) {
   return name
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f\u00f8]/g, "")
     .replace(/[^a-z0-9 ]/g, "")
     .trim();
-}
-
-function toApiName(ptName: string) {
-  return TEAM_MAP[ptName] ?? ptName;
 }
 
 function teamNamesMatch(a: string, b: string) {
@@ -88,7 +88,12 @@ function extractScore(match: any) {
   return { home: src.home, away: src.away };
 }
 
+function toPtName(enName: string): string {
+  return REVERSE_TEAM_MAP[enName] ?? enName;
+}
+
 type UpdateResult = {
+  synced: string[];
   updated: string[];
   failed: { match: string; reason: string }[];
 };
@@ -109,100 +114,84 @@ export async function updateMatchResults(): Promise<UpdateResult> {
     global: { fetch: fetch.bind(globalThis) },
   });
 
-  const { data: pendingMatches, error: fetchErr } = await sb
-    .from("copaepica_matches")
-    .select("id, team_a, team_b, match_date, round_number")
-    .lt("match_date", new Date().toISOString())
-    .is("result_a", null)
-    .order("match_date");
+  const result: UpdateResult = { synced: [], updated: [], failed: [] };
 
-  if (fetchErr) throw new Error(`DB fetch error: ${fetchErr.message}`);
-  if (!pendingMatches || pendingMatches.length === 0) {
-    return { updated: [], failed: [] };
+  let apiMatches: any[];
+  try {
+    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches`;
+    const res = await fetch(url, {
+      headers: { "X-Auth-Token": FOOTBALL_API_KEY },
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`football-data.org ${res.status}: ${body}`);
+    }
+    const data = await res.json();
+    apiMatches = data.matches ?? [];
+  } catch (err: any) {
+    throw new Error(`API error: ${err.message}`);
   }
 
-  const byDate: Record<string, typeof pendingMatches> = {};
-  for (const m of pendingMatches) {
-    const d = m.match_date.slice(0, 10);
-    (byDate[d] ||= []).push(m);
-  }
-
-  const dateKeys = Object.keys(byDate).sort();
-  const result: UpdateResult = { updated: [], failed: [] };
-  const FOOTBALL_API_KEY_FETCH = FOOTBALL_API_KEY;
-
-  for (const dateStr of dateKeys) {
-    await new Promise((ok) => setTimeout(ok, 500));
-
-    let apiMatches: any[];
-    try {
-      const url = `${FOOTBALL_API_BASE}/matches?date=${dateStr}&competitions=${COMPETITION_CODE}`;
-      const res = await fetch(url, {
-        headers: { "X-Auth-Token": FOOTBALL_API_KEY_FETCH },
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`football-data.org ${res.status}: ${body}`);
-      }
-      const data = await res.json();
-      apiMatches = data.matches ?? [];
-    } catch (err: any) {
-      for (const m of byDate[dateStr]) {
-        result.failed.push({ match: `${m.team_a} vs ${m.team_b}`, reason: `API error: ${err.message}` });
-      }
+  for (const apiMatch of apiMatches) {
+    const homeEn = apiMatch.homeTeam?.name ?? "";
+    const awayEn = apiMatch.awayTeam?.name ?? "";
+    if (!homeEn || !awayEn) {
+      result.failed.push({ match: `${homeEn} vs ${awayEn}`, reason: "Time vazio na API" });
       continue;
     }
 
-    for (const ourMatch of byDate[dateStr]) {
-      const teamAen = toApiName(ourMatch.team_a);
-      const teamBen = toApiName(ourMatch.team_b);
+    const teamA = toPtName(homeEn);
+    const teamB = toPtName(awayEn);
+    const matchDate = apiMatch.utcDate;
+    const roundNumber = apiMatch.matchday ?? 1;
+    const score = extractScore(apiMatch);
+    const isFinished = apiMatch.status === "FINISHED";
 
-      const apiMatch = apiMatches.find((am: any) => {
-        const homeName = am.homeTeam?.name ?? am.homeTeam?.shortName ?? "";
-        const awayName = am.awayTeam?.name ?? am.awayTeam?.shortName ?? "";
-        return (
-          (teamNamesMatch(teamAen, homeName) && teamNamesMatch(teamBen, awayName)) ||
-          (teamNamesMatch(teamAen, awayName) && teamNamesMatch(teamBen, homeName))
-        );
-      });
+    const { data: existing } = await sb
+      .from("copaepica_matches")
+      .select("id, result_a, result_b")
+      .eq("team_a", teamA)
+      .eq("team_b", teamB)
+      .eq("round_number", roundNumber)
+      .maybeSingle();
 
-      if (!apiMatch) {
-        result.failed.push({ match: `${ourMatch.team_a} vs ${ourMatch.team_b}`, reason: "Não encontrado na API" });
-        continue;
+    if (existing) {
+      if (isFinished && score && (existing.result_a === null || existing.result_b === null)) {
+        const homeName = apiMatch.homeTeam?.name ?? "";
+        const awayName = apiMatch.awayTeam?.name ?? "";
+        const isHomeA = teamNamesMatch(normalizeName(teamA), normalizeName(homeName));
+        const resultA = isHomeA ? score.home : score.away;
+        const resultB = isHomeA ? score.away : score.home;
+
+        const { error: updateErr } = await sb
+          .from("copaepica_matches")
+          .update({ result_a: resultA, result_b: resultB })
+          .eq("id", existing.id);
+
+        if (updateErr) {
+          result.failed.push({ match: `${teamA} vs ${teamB}`, reason: `DB error: ${updateErr.message}` });
+        } else {
+          result.updated.push(`${teamA} ${resultA}×${resultB} ${teamB}`);
+        }
       }
-
-      const score = extractScore(apiMatch);
-      if (!score) {
-        result.failed.push({ match: `${ourMatch.team_a} vs ${ourMatch.team_b}`, reason: "Jogo sem resultado ainda" });
-        continue;
-      }
-
-      const homeName = apiMatch.homeTeam?.name ?? apiMatch.homeTeam?.shortName ?? "";
-      const awayName = apiMatch.awayTeam?.name ?? apiMatch.awayTeam?.shortName ?? "";
-      const isHomeTeamA = teamNamesMatch(teamAen, homeName);
-      const isAwayTeamA = !isHomeTeamA && teamNamesMatch(teamAen, awayName);
-
-      if (!isHomeTeamA && !isAwayTeamA) {
-        result.failed.push({ match: `${ourMatch.team_a} vs ${ourMatch.team_b}`, reason: "Não foi possível mapear os times" });
-        continue;
-      }
-
-      const resultA = isHomeTeamA ? score.home : score.away;
-      const resultB = isHomeTeamA ? score.away : score.home;
-
-      const { error: updateErr } = await sb
+    } else {
+      const { error: insertErr } = await sb
         .from("copaepica_matches")
-        .update({ result_a: resultA, result_b: resultB })
-        .eq("id", ourMatch.id);
+        .insert({
+          team_a: teamA,
+          team_b: teamB,
+          match_date: matchDate,
+          round_number: roundNumber,
+          result_a: (isFinished && score) ? (teamNamesMatch(normalizeName(teamA), normalizeName(apiMatch.homeTeam?.name ?? "")) ? score.home : score.away) : null,
+          result_b: (isFinished && score) ? (teamNamesMatch(normalizeName(teamA), normalizeName(apiMatch.homeTeam?.name ?? "")) ? score.away : score.home) : null,
+        });
 
-      if (updateErr) {
-        result.failed.push({ match: `${ourMatch.team_a} vs ${ourMatch.team_b}`, reason: `DB error: ${updateErr.message}` });
+      if (insertErr) {
+        result.failed.push({ match: `${teamA} vs ${teamB}`, reason: `DB insert error: ${insertErr.message}` });
       } else {
-        result.updated.push(`${ourMatch.team_a} ${resultA}×${resultB} ${ourMatch.team_b}`);
+        result.synced.push(`${teamA} vs ${teamB}`);
       }
     }
-
-    if (dateKeys.length > 1) await new Promise((ok) => setTimeout(ok, 6500));
   }
 
   return result;

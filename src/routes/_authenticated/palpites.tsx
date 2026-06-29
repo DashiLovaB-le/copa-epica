@@ -188,13 +188,14 @@ function PalpitesPage() {
     setUpdating(true);
     try {
       const result = await updateResults();
-      const total = result.updated.length + result.failed.length;
-      if (result.updated.length > 0) {
-        toast.success(`${result.updated.length}/${total} jogos atualizados`);
-      } else if (result.failed.length > 0) {
-        toast.info(`Nenhum resultado novo encontrado (${result.failed.length} pendentes)`);
+      const partes: string[] = [];
+      if (result.synced.length > 0) partes.push(`${result.synced.length} novos jogos`);
+      if (result.updated.length > 0) partes.push(`${result.updated.length} resultados`);
+      if (result.failed.length > 0) partes.push(`${result.failed.length} falhas`);
+      if (partes.length > 0) {
+        toast.success(partes.join(", "));
       } else {
-        toast.info("Nenhum jogo pendente para atualizar");
+        toast.info("Nenhuma atualização disponível");
       }
       qc.invalidateQueries({ queryKey: ["palpites"] });
     } catch (err: any) {
