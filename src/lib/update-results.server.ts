@@ -106,6 +106,7 @@ export async function updateMatchResults(): Promise<UpdateResult> {
 
   const sb = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetch.bind(globalThis) },
   });
 
   const { data: pendingMatches, error: fetchErr } = await sb
