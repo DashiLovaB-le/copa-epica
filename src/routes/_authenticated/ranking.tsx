@@ -325,9 +325,15 @@ function RankingPage() {
               <StatRow label="Posição atual" value={`${userEntry.rank}º`} />
               <StatRow label="Diferença total nos placares" value={String(userEntry.total_score_diff)} />
             </div>
-            <p className="text-[10px] text-black/40 mt-2 leading-relaxed">
-              <strong>Critério de desempate:</strong> 1º pontos · 2º menor diferença nos placares · 3º palpite mais antigo
-            </p>
+            <div className="mt-3 bg-neutral-50 brutal-border p-3 text-[11px] leading-relaxed text-black/70 space-y-1">
+              <p className="font-bold text-black uppercase tracking-widest text-[10px]">Critério de desempate do Ranking</p>
+              <p>O ranking é ordenado nesta sequência:</p>
+              <p><strong>1º — Pontos totais</strong> (maior → menor)</p>
+              <p><strong>2º — Placar mais próximo</strong> (soma da diferença absoluta entre palpite e resultado real em todos os jogos, menor → melhor)</p>
+              <p className="text-[10px] pl-3">Exemplo: se um jogo terminou 3×1 e você palpou 2×0, a diferença é |2-3| + |0-1| = 2. Essa soma é acumulada para todos os jogos com resultado. Quem tiver a menor soma fica na frente.</p>
+              <p><strong>3º — Data do palpite</strong> (desempate final: quem fez o primeiro palpite primeiro fica na frente)</p>
+              <p>Isso garante que, mesmo que dois participantes tenham exatamente os mesmos pontos, o desempate será justo — primeiro pela precisão dos palpites (quem chutou mais perto), e depois por quem se comprometeu primeiro.</p>
+            </div>
           </div>
         )}
 
