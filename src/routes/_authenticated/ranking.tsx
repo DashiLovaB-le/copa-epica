@@ -205,31 +205,38 @@ function RankingPage() {
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3 text-center">
                 PÓDIO
               </p>
-              <div className="grid grid-cols-3 gap-3 items-end">
-                {top3[1] && (
-                  <PodiumCard
-                    position={2}
-                    name={top3[1].display_name}
-                    points={top3[1].points}
-                    className="bg-[color:var(--brand-yellow)] text-black"
-                  />
-                )}
-                {top3[0] && (
-                  <PodiumCard
-                    position={1}
-                    name={top3[0].display_name}
-                    points={top3[0].points}
-                    className="bg-[color:var(--brand-green)] text-white"
-                  />
-                )}
-                {top3[2] && (
-                  <PodiumCard
-                    position={3}
-                    name={top3[2].display_name}
-                    points={top3[2].points}
-                    className="bg-white text-black"
-                  />
-                )}
+              <div className="grid grid-cols-7 items-end">
+                <div className="col-start-2 col-span-2">
+                  {top3[1] && (
+                    <PodiumCard
+                      position={2}
+                      name={top3[1].display_name}
+                      points={top3[1].points}
+                      className="bg-[color:var(--brand-yellow)] text-black"
+                    />
+                  )}
+                </div>
+                <div className="col-span-3">
+                  {top3[0] && (
+                    <PodiumCard
+                      position={1}
+                      name={top3[0].display_name}
+                      points={top3[0].points}
+                      big
+                      className="bg-[color:var(--brand-green)] text-white"
+                    />
+                  )}
+                </div>
+                <div className="col-span-2">
+                  {top3[2] && (
+                    <PodiumCard
+                      position={3}
+                      name={top3[2].display_name}
+                      points={top3[2].points}
+                      className="bg-white text-black"
+                    />
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-0 border-t-[3px] border-black" />
@@ -246,7 +253,7 @@ function RankingPage() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b-[3px] border-black text-[10px] uppercase font-bold tracking-widest">
-                      <th className="p-3 w-14 text-center">#</th>
+                      <th className="p-3 w-12 text-center">#</th>
                       <th className="p-3">Participante</th>
                       <th className="p-3 text-center">Acertos</th>
                       <th className="p-3 text-right">Pontos</th>
@@ -263,9 +270,9 @@ function RankingPage() {
                           }`}
                           style={{ animationDelay: `${i * 40}ms` }}
                         >
-                          <td className="p-3 text-center">
+                          <td className="p-3 text-center align-middle">
                             <span
-                              className={`inline-flex items-center justify-center w-8 h-8 font-display text-lg ${
+                              className={`inline-flex items-center justify-center w-7 h-7 font-display text-base ${
                                 r.rank <= 3
                                   ? "bg-[color:var(--brand-blue)] text-white"
                                   : "text-black"
@@ -274,7 +281,7 @@ function RankingPage() {
                               {r.rank}
                             </span>
                           </td>
-                          <td className="p-3 font-bold uppercase">
+                          <td className="p-3 font-bold uppercase align-middle">
                             <span className="flex items-center gap-2">
                               {r.display_name}
                               {isMe && (
@@ -284,10 +291,10 @@ function RankingPage() {
                               )}
                             </span>
                           </td>
-                          <td className="p-3 text-center font-bold text-black/60">
+                          <td className="p-3 text-center font-bold text-black/60 align-middle">
                             {r.correct_guesses}
                           </td>
-                          <td className="p-3 text-right font-display text-xl leading-none">
+                          <td className="p-3 text-right font-display text-xl leading-none align-middle">
                             {r.points}
                           </td>
                         </tr>
@@ -314,7 +321,11 @@ function RankingPage() {
                 value={String(maxPoints - userEntry.points)}
               />
               <StatRow label="Posição atual" value={`${userEntry.rank}º`} />
+              <StatRow label="Diferença total nos placares" value={String(userEntry.total_score_diff)} />
             </div>
+            <p className="text-[10px] text-black/40 mt-2 leading-relaxed">
+              <strong>Critério de desempate:</strong> 1º pontos · 2º menor diferença nos placares · 3º palpite mais antigo
+            </p>
           </div>
         )}
 
@@ -332,21 +343,23 @@ function PodiumCard({
   position,
   name,
   points,
+  big,
   className,
 }: {
   position: 1 | 2 | 3;
   name: string;
   points: number;
+  big?: boolean;
   className: string;
 }) {
   const emoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
     <div
-      className={`brutal-border p-3 text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#000] ${className}`}
+      className={`brutal-border text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#000] ${big ? "p-5" : "p-3"} ${className}`}
     >
-      <p className="text-2xl mb-1">{emoji[position]}</p>
+      <p className={big ? "text-3xl mb-1" : "text-2xl mb-1"}>{emoji[position]}</p>
       <p className="font-bold uppercase text-xs truncate w-full">{name}</p>
-      <p className="font-display text-xl leading-none">{points} PTS</p>
+      <p className={`font-display leading-none ${big ? "text-3xl mt-1" : "text-xl"} `}>{points} PTS</p>
     </div>
   );
 }
