@@ -348,7 +348,7 @@ function PalpitesPage() {
                     prediction={
                       (data?.preds ?? []).find((x) => x.match_id === m.id)
                     }
-                    started={new Date(m.match_date).getTime() <= now}
+                    started={new Date(m.match_date).getTime() <= Date.now()}
                     onSave={(a, b) => savePrediction(m.id, a, b)}
                   />
                 </div>
