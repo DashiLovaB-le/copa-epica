@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import bgAuth from "@/assets/bg-auth.png";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [{ title: "Entrar — Copa Épica" }],
   }),
