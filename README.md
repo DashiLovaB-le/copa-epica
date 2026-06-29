@@ -50,15 +50,21 @@ Tudo com bordas pretas grossas, sombras marcantes e tipografia bold.
 
 ---
 
-## ✦ Score
+## ✦ Como funciona o Palpite
 
-| Situação | Pontos |
-|---|---|
-| Placar exato | 10 pts |
-| Vencedor/empate certo | 5 pts |
-| Errou | 0 pts |
+Para cada jogo da Copa, você pode dar seu palpite: quantos gols cada time vai fazer.
 
-> A pontuação é calculada automaticamente assim que o resultado da partida é registrado, via triggers no banco de dados.
+**Pontuação:**
+
+- **Placar exato** — Se você acertar o placar certinho (ex: Brasil 2×1 Argentina e o jogo termina 2×1) → **10 pontos**
+- **Resultado certo** — Se você acertar quem venceu ou se foi empate, mas errou o número de gols (ex: você colocou Brasil 3×0 e o jogo terminou 2×1) → **5 pontos**
+- **Errou** — Se você apostou no time A e o time B venceu → **0 pontos**
+
+**Quando os pontos são calculados?**
+
+Assim que o jogo termina e o resultado é registrado, seus pontos são calculados automaticamente — você não precisa fazer nada.
+
+**Dica:** Você pode editar seu palpite quantas vezes quiser até a bola rolar. Depois que o jogo começa, o palpite é bloqueado.
 
 ---
 
