@@ -66,6 +66,14 @@ Assim que o jogo termina e o resultado é registrado, seus pontos são calculado
 
 **Dica:** Você pode editar seu palpite quantas vezes quiser até a bola rolar. Depois que o jogo começa, o palpite é bloqueado.
 
+### Tabela resumo
+
+| Situação | Pontos |
+|---|---|
+| Placar exato | 10 pts |
+| Vencedor/empate certo | 5 pts |
+| Errou | 0 pts
+
 ---
 
 ## ✦ Tech Stack
