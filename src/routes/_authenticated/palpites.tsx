@@ -122,6 +122,7 @@ function PalpitesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["palpites", user.id],
     queryFn: () => fetchData(user.id),
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
@@ -141,8 +142,6 @@ function PalpitesPage() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const now = useMemo(() => Date.now(), []);
-
   const allMatches = data?.matches ?? [];
 
   const availableMatches = useMemo(
@@ -158,14 +157,16 @@ function PalpitesPage() {
   }, [availableMatches, allMatches]);
 
   const nextMatchCountdown = useMemo(() => {
+    const now = Date.now();
     const nextMatch = availableMatches.find(
       (m) => new Date(m.match_date).getTime() > now,
     );
     if (!nextMatch) return null;
     return formatCountdown(new Date(nextMatch.match_date).getTime() - now);
-  }, [availableMatches, now]);
+  }, [availableMatches]);
 
   const filteredMatches = useMemo(() => {
+    const now = Date.now();
     const today = new Date();
     const startOfToday = new Date(
       today.getFullYear(), today.getMonth(), today.getDate(),
@@ -181,7 +182,7 @@ function PalpitesPage() {
         case "encerrados": return m.result_a !== null;
       }
     });
-  }, [allMatches, filter, now]);
+  }, [allMatches, filter]);
 
   async function handleUpdate() {
     setUpdating(true);
