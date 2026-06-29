@@ -205,8 +205,8 @@ function RankingPage() {
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3 text-center">
                 PÓDIO
               </p>
-              <div className="grid grid-cols-7 items-end">
-                <div className="col-start-2 col-span-2">
+              <div className="grid grid-cols-3 items-end gap-2">
+                <div className="flex justify-center">
                   {top3[1] && (
                     <PodiumCard
                       position={2}
@@ -216,7 +216,7 @@ function RankingPage() {
                     />
                   )}
                 </div>
-                <div className="col-span-3">
+                <div className="flex justify-center">
                   {top3[0] && (
                     <PodiumCard
                       position={1}
@@ -227,7 +227,7 @@ function RankingPage() {
                     />
                   )}
                 </div>
-                <div className="col-span-2">
+                <div className="flex justify-center">
                   {top3[2] && (
                     <PodiumCard
                       position={3}
