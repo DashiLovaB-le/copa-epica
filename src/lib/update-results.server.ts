@@ -1,5 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const TEAM_MAP: Record<string, string> = {
   "México": "Mexico",
@@ -107,20 +106,15 @@ type UpdateResult = {
 };
 
 export async function updateMatchResults(): Promise<UpdateResult> {
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY;
   const FOOTBALL_API_BASE = "https://api.football-data.org/v4";
   const COMPETITION_CODE = "WC";
 
-  if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !FOOTBALL_API_KEY) {
-    throw new Error("Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, FOOTBALL_API_KEY");
+  if (!FOOTBALL_API_KEY) {
+    throw new Error("Missing required env var: FOOTBALL_API_KEY");
   }
 
-  const sb = createClient<Database>(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: { fetch: fetch.bind(globalThis) },
-  });
+  const sb = supabaseAdmin;
 
   const result: UpdateResult = { synced: [], updated: [], failed: [] };
 

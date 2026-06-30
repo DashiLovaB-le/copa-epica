@@ -107,20 +107,14 @@ function RodadasPage() {
   });
 
   useEffect(() => {
+    let mounted = true;
+    const cb = () => { if (mounted) qc.invalidateQueries({ queryKey: ["rodadas"] }); };
     const ch = supabase
       .channel("rodadas-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_matches" },
-        () => qc.invalidateQueries({ queryKey: ["rodadas"] }),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_predictions" },
-        () => qc.invalidateQueries({ queryKey: ["rodadas"] }),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_matches" }, cb)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_predictions" }, cb)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
 
   const grouped = (data?.matches ?? []).reduce<Record<number, MatchRow[]>>((acc, m) => {

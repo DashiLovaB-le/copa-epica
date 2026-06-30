@@ -126,20 +126,14 @@ function PalpitesPage() {
   });
 
   useEffect(() => {
+    let mounted = true;
+    const cb = () => { if (mounted) qc.invalidateQueries({ queryKey: ["palpites"] }); };
     const ch = supabase
       .channel("palpites-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_matches" },
-        () => qc.invalidateQueries({ queryKey: ["palpites"] }),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_predictions" },
-        () => qc.invalidateQueries({ queryKey: ["palpites"] }),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_matches" }, cb)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_predictions" }, cb)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
 
   const allMatches = data?.matches ?? [];

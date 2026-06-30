@@ -106,17 +106,13 @@ function RankingPage() {
   });
 
   useEffect(() => {
+    let mounted = true;
+    const cb = () => { if (mounted) qc.invalidateQueries({ queryKey: ["ranking"] }); };
     const ch = supabase
       .channel("ranking-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "copaepica_profiles" },
-        () => qc.invalidateQueries({ queryKey: ["ranking"] }),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_profiles" }, cb)
       .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
 
   if (isLoading) {
