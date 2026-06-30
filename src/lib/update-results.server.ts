@@ -90,7 +90,7 @@ function teamNamesMatch(a: string, b: string) {
 function extractScore(match: any) {
   const score = match.score;
   if (!score) return null;
-  const src = score.fullTime || score.regularTime || score.extraTime || score.penalties;
+  const src = score.regularTime;
   if (!src || src.home === null || src.away === null) return null;
   return { home: src.home, away: src.away };
 }

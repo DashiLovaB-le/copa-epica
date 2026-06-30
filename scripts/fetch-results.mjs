@@ -143,8 +143,8 @@ async function fetchApiMatches(dateStr) {
 function extractScore(match) {
   const score = match.score;
   if (!score) return null;
-  // Prefer fullTime, then regular time, then extraTime, then penalties
-  const src = score.fullTime || score.regularTime || score.extraTime || score.penalties;
+  // Only use regular time (90min + stoppage time), no extra time or penalties
+  const src = score.regularTime;
   if (!src || src.home === null || src.away === null) return null;
   return { home: src.home, away: src.away };
 }
