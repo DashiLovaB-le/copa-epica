@@ -7,6 +7,8 @@ import { formatMatchDate } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
 import { updateResults } from "@/lib/api/update-results.functions";
 import { toast } from "sonner";
+import { getPhaseName, PHASE_ORDER, getPhaseInfo, getPhaseDateLabel } from "@/lib/phases";
+import type { Phase } from "@/lib/phases";
 
 function BouncingBall() {
   return (
@@ -60,10 +62,10 @@ async function fetchRounds(userId: string) {
   const [m, p] = await Promise.all([
     supabase
       .from("copaepica_matches")
-      .select("*")
+      .select("id, round_number, team_a, team_b, match_date, result_a, result_b")
+      .gte("match_date", "2026-06-11")
       .not("result_a", "is", null)
       .not("result_b", "is", null)
-      .order("round_number", { ascending: true })
       .order("match_date", { ascending: true }),
     supabase
       .from("copaepica_predictions")
@@ -78,7 +80,7 @@ async function fetchRounds(userId: string) {
 function RodadasPage() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [updating, setUpdating] = useState(false);
 
   async function handleUpdate() {
@@ -118,14 +120,15 @@ function RodadasPage() {
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
 
-  const grouped = (data?.matches ?? []).reduce<Record<number, MatchRow[]>>((acc, m) => {
-    (acc[m.round_number] ||= []).push(m);
+  const grouped = (data?.matches ?? []).reduce<Record<string, MatchRow[]>>((acc, m) => {
+    const phase = getPhaseName(m.match_date);
+    (acc[phase] ||= []).push(m);
     return acc;
   }, {});
 
-  const roundNumbers = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-  const activeRound = selectedRound ?? (roundNumbers.length > 0 ? roundNumbers[roundNumbers.length - 1] : null);
-  const currentMatches = activeRound != null ? grouped[activeRound] ?? [] : [];
+  const phases = PHASE_ORDER.filter((p) => grouped[p]?.length > 0);
+  const activePhase = selectedPhase ?? (phases.length > 0 ? phases[phases.length - 1] : null);
+  const currentMatches = activePhase != null ? grouped[activePhase] ?? [] : [];
 
   const roundPreds = currentMatches.map((m) => {
     const p = data?.preds.find((x) => x.match_id === m.id) ?? null;
@@ -142,7 +145,7 @@ function RodadasPage() {
       <div className="pb-4 animate-in fade-in duration-300" style={{ viewTransitionName: "page-rodadas" } as any}>
         <PageHeader title="RODADAS" subtitle="Histórico de resultados" />
         <div className="flex brutal-border border-x-0 border-t-0">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="flex-1 h-11 bg-neutral-200" />
           ))}
         </div>
@@ -184,40 +187,47 @@ function RodadasPage() {
         }
       />
 
-      {roundNumbers.length === 0 ? (
+      {phases.length === 0 ? (
         <div className="p-4">
           <div className="bg-white brutal-border p-6 text-center">
-            <p className="font-display text-2xl">Nenhuma rodada finalizada</p>
+            <p className="font-display text-2xl">Nenhuma fase finalizada</p>
             <p className="text-sm mt-2 uppercase font-bold tracking-wider text-black/60">
-              Os resultados aparecerão aqui conforme os jogos terminarem
+              Os resultados aparecerão aqui conforme as fases forem encerradas
             </p>
           </div>
         </div>
       ) : (
         <>
           <div className="flex overflow-x-auto brutal-border border-x-0 border-t-0">
-            {roundNumbers.map((rn) => (
-              <button
-                key={rn}
-                onClick={() => setSelectedRound(rn)}
-                className={`flex-shrink-0 px-5 py-3 font-bold text-xs uppercase tracking-widest transition-colors ${
-                  activeRound === rn
-                    ? "bg-[color:var(--brand-yellow)] text-black"
-                    : "bg-white text-black/60 hover:bg-neutral-100"
-                }`}
-              >
-                RODADA {rn}
-              </button>
-            ))}
+            {phases.map((phase) => {
+              const info = getPhaseInfo(phase);
+              return (
+                <button
+                  key={phase}
+                  onClick={() => setSelectedPhase(phase)}
+                  className={`flex-shrink-0 px-4 py-3 font-bold text-[11px] uppercase tracking-widest transition-colors ${
+                    activePhase === phase
+                      ? "bg-[color:var(--brand-yellow)] text-black"
+                      : "bg-white text-black/60 hover:bg-neutral-100"
+                  }`}
+                >
+                  {info.emoji} {info.label}
+                </button>
+              );
+            })}
           </div>
 
-          {activeRound != null && (
+          {activePhase != null && (
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-[3px] bg-black" />
-                <h2 className="font-display text-3xl whitespace-nowrap">RODADA {activeRound}</h2>
+                <h2 className="font-display text-3xl whitespace-nowrap">{getPhaseInfo(activePhase).emoji} {getPhaseInfo(activePhase).label}</h2>
                 <div className="flex-1 h-[3px] bg-black" />
               </div>
+
+              <p className="text-[10px] uppercase font-bold tracking-widest text-black/40 text-center -mt-2">
+                {getPhaseDateLabel(activePhase)}
+              </p>
 
               <div className="bg-white brutal-border p-4 space-y-1">
                 <p className="text-sm font-bold uppercase tracking-wider">
@@ -290,7 +300,7 @@ function RodadasPage() {
 
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-[3px] bg-black" />
-                <h2 className="font-display text-3xl whitespace-nowrap">RESUMO DA RODADA</h2>
+                <h2 className="font-display text-3xl whitespace-nowrap">RESUMO DA FASE</h2>
                 <div className="flex-1 h-[3px] bg-black" />
               </div>
 

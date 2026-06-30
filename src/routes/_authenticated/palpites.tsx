@@ -84,6 +84,7 @@ async function fetchData(userId: string) {
     supabase
       .from("copaepica_matches")
       .select("*")
+      .gte("match_date", "2026-06-28")
       .order("match_date", { ascending: true }),
     supabase
       .from("copaepica_predictions")

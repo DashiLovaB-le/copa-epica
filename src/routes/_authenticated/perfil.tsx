@@ -46,6 +46,7 @@ async function fetchRank(id: string) {
     supabase
       .from("copaepica_matches")
       .select("id, result_a, result_b")
+      .gte("match_date", "2026-06-28")
       .not("result_a", "is", null),
   ]);
   if (profilesRes.error) throw profilesRes.error;
@@ -100,6 +101,7 @@ async function fetchRoundHistory(userId: string): Promise<RoundSummary[]> {
     supabase
       .from("copaepica_matches")
       .select("id, round_number")
+      .gte("match_date", "2026-06-28")
       .not("result_a", "is", null)
       .not("result_b", "is", null)
       .order("round_number", { ascending: true }),

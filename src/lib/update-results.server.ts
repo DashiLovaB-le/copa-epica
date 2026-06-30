@@ -118,10 +118,10 @@ export async function updateMatchResults(): Promise<UpdateResult> {
 
   const result: UpdateResult = { synced: [], updated: [], failed: [] };
 
-  // 1. Fetch all matches from API
+  // 1. Fetch all matches from API (apenas jogos a partir de 28/06 — fases eliminatórias)
   let apiMatches: any[];
   try {
-    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches`;
+    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches?dateFrom=2026-06-28`;
     const res = await fetch(url, {
       headers: { "X-Auth-Token": FOOTBALL_API_KEY },
     });
@@ -159,9 +159,11 @@ export async function updateMatchResults(): Promise<UpdateResult> {
       continue;
     }
 
+    const matchDate = apiMatch.utcDate;
+    if (matchDate && matchDate < "2026-06-28") continue;
+
     const teamA = toPtName(homeEn);
     const teamB = toPtName(awayEn);
-    const matchDate = apiMatch.utcDate;
     const roundNumber = apiMatch.matchday ?? 1;
     const score = extractScore(apiMatch);
     const isFinished = apiMatch.status === "FINISHED";

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +32,7 @@ async function fetchRanking() {
     supabase
       .from("copaepica_matches")
       .select("id, result_a, result_b")
+      .gte("match_date", "2026-06-28")
       .not("result_a", "is", null),
   ]);
   if (profilesRes.error) throw profilesRes.error;
@@ -84,6 +85,7 @@ async function fetchLatestRound() {
   const { data, error } = await supabase
     .from("copaepica_matches")
     .select("round_number")
+    .gte("match_date", "2026-06-28")
     .not("result_a", "is", null)
     .order("round_number", { ascending: false })
     .limit(1)
@@ -92,20 +94,43 @@ async function fetchLatestRound() {
   return data?.round_number ?? null;
 }
 
+type CorrectPrediction = {
+  team_a: string;
+  team_b: string;
+  predicted_a: number;
+  predicted_b: number;
+  result_a: number;
+  result_b: number;
+  points_earned: number;
+};
+
+type RoundFeedbackEntry = {
+  display_name: string;
+  points_earned: number;
+  correct_count: number;
+  correct_predictions: CorrectPrediction[];
+};
+
 type RoundFeedback = {
   round: number;
-  entries: {
-    display_name: string;
-    points_earned: number;
-    correct_count: number;
-    total_points: number;
-  }[];
+  entries: RoundFeedbackEntry[];
+};
+
+type RankingChange = {
+  display_name: string;
+  old_rank: number;
+  new_rank: number;
+  points_earned: number;
+  total_points: number;
+  correct_count: number;
+  correct_predictions: CorrectPrediction[];
 };
 
 async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
   const { data: roundNumbers } = await supabase
     .from("copaepica_matches")
     .select("round_number")
+    .gte("match_date", "2026-06-28")
     .not("result_a", "is", null)
     .order("round_number", { ascending: false });
 
@@ -116,8 +141,9 @@ async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
   for (const round of uniqueRounds) {
     const { data: matches } = await supabase
       .from("copaepica_matches")
-      .select("id")
+      .select("id, team_a, team_b, result_a, result_b")
       .eq("round_number", round)
+      .gte("match_date", "2026-06-28")
       .not("result_a", "is", null);
     if (!matches?.length) continue;
 
@@ -137,26 +163,44 @@ async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
 
       const { data: allPreds } = await supabase
         .from("copaepica_predictions")
-        .select("user_id, points_earned, is_correct")
+        .select("user_id, match_id, predicted_a, predicted_b, points_earned, is_correct")
         .in("match_id", matchIds);
 
       const profileMap = new Map(profiles.map(p => [p.id, p]));
-      const acc = new Map<string, { points_earned: number; correct_count: number }>();
+      const matchMap = new Map(matches.map(m => [m.id, m]));
+      const userData = new Map<string, { points_earned: number; correct_count: number; correct_predictions: CorrectPrediction[] }>();
 
       for (const p of allPreds ?? []) {
-        const entry = acc.get(p.user_id) || { points_earned: 0, correct_count: 0 };
-        entry.points_earned += p.points_earned ?? 0;
-        if (p.is_correct) entry.correct_count++;
-        acc.set(p.user_id, entry);
+        let ud = userData.get(p.user_id);
+        if (!ud) {
+          ud = { points_earned: 0, correct_count: 0, correct_predictions: [] };
+          userData.set(p.user_id, ud);
+        }
+        ud.points_earned += p.points_earned ?? 0;
+        if (p.is_correct) {
+          ud.correct_count++;
+          const match = matchMap.get(p.match_id);
+          if (match) {
+            ud.correct_predictions.push({
+              team_a: match.team_a,
+              team_b: match.team_b,
+              predicted_a: p.predicted_a,
+              predicted_b: p.predicted_b,
+              result_a: match.result_a,
+              result_b: match.result_b,
+              points_earned: p.points_earned ?? 0,
+            });
+          }
+        }
       }
 
-      const entries = Array.from(acc.entries())
+      const entries = Array.from(userData.entries())
         .filter(([id]) => profileMap.has(id))
-        .map(([id, data]) => ({
+        .map(([id, ud]) => ({
           display_name: profileMap.get(id)!.display_name,
-          points_earned: data.points_earned,
-          correct_count: data.correct_count,
-          total_points: profileMap.get(id)!.points,
+          points_earned: ud.points_earned,
+          correct_count: ud.correct_count,
+          correct_predictions: ud.correct_predictions,
         }))
         .sort((a, b) => b.points_earned - a.points_earned);
 
@@ -196,6 +240,58 @@ function RankingPage() {
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
 
+  const participants = ranking ?? [];
+  const userEntry = participants.find((p) => p.id === user.id);
+  const top3 = participants.slice(0, 3);
+  const maxPoints = participants.length > 0 ? participants[0].points : 0;
+  const gapToTop3 =
+    userEntry && top3.length === 3 && userEntry.rank > 3
+      ? top3[2].points - userEntry.points
+      : null;
+
+  const changes = useMemo(() => {
+    if (!roundFeedback || !ranking || roundFeedback.entries.length === 0) return null;
+
+    const roundPointsMap = new Map(
+      roundFeedback.entries.map((e) => [e.display_name, e.points_earned]),
+    );
+    const feedbackMap = new Map(
+      roundFeedback.entries.map((e) => [e.display_name, e]),
+    );
+
+    const participantsWithBefore = ranking.map((p) => ({
+      ...p,
+      points_before: p.points - (roundPointsMap.get(p.display_name) ?? 0),
+    }));
+
+    const sortedByBefore = [...participantsWithBefore].sort((a, b) => {
+      if (b.points_before !== a.points_before)
+        return b.points_before - a.points_before;
+      if (a.total_score_diff !== b.total_score_diff)
+        return a.total_score_diff - b.total_score_diff;
+      if (a.first_prediction_at && b.first_prediction_at)
+        return a.first_prediction_at.localeCompare(b.first_prediction_at);
+      return 0;
+    });
+
+    const oldRankMap = new Map(sortedByBefore.map((p, i) => [p.id, i + 1]));
+
+    return ranking
+      .filter((p) => feedbackMap.has(p.display_name))
+      .map((p) => {
+        const fe = feedbackMap.get(p.display_name)!;
+        return {
+          display_name: p.display_name,
+          old_rank: oldRankMap.get(p.id) ?? p.rank,
+          new_rank: p.rank,
+          points_earned: fe.points_earned,
+          total_points: p.points,
+          correct_count: fe.correct_count,
+          correct_predictions: fe.correct_predictions,
+        };
+      }).sort((a, b) => b.points_earned - a.points_earned);
+  }, [roundFeedback, ranking]);
+
   if (isLoading) {
     return (
       <div className="animate-in fade-in duration-300" style={{ viewTransitionName: "page-ranking" } as any}>
@@ -229,15 +325,6 @@ function RankingPage() {
       </div>
     );
   }
-
-  const participants = ranking ?? [];
-  const userEntry = participants.find((p) => p.id === user.id);
-  const top3 = participants.slice(0, 3);
-  const maxPoints = participants.length > 0 ? participants[0].points : 0;
-  const gapToTop3 =
-    userEntry && top3.length === 3 && userEntry.rank > 3
-      ? top3[2].points - userEntry.points
-      : null;
 
   return (
     <div style={{ viewTransitionName: "page-ranking" } as any}>
@@ -422,40 +509,48 @@ function RankingPage() {
           </div>
         )}
 
-        {roundFeedback && (
+        {roundFeedback && changes && changes.length > 0 && (
           <>
             <div className="h-0 border-t-[3px] border-black" />
             <div>
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
                 ⚡ FECHAMENTO DA RODADA {roundFeedback.round}
               </p>
-              <div className="bg-white brutal-border brutal-shadow p-4 space-y-3">
-                {roundFeedback.entries.map((entry, i) => {
-                  const isTop = i === 0;
+              <div className="bg-white brutal-border brutal-shadow p-4 space-y-2">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+                  Mudanças no ranking:
+                </p>
+                {changes.map((c) => {
+                  const reason = c.correct_predictions.length > 0
+                    ? c.correct_predictions.map((cp) => {
+                        const acertou = cp.result_a === cp.predicted_a && cp.result_b === cp.predicted_b;
+                        if (acertou) {
+                          return `acertou o ${cp.predicted_a}×${cp.predicted_b} exato`;
+                        }
+                        return `acertou o resultado (${cp.team_a} ${cp.result_a}×${cp.result_b} ${cp.team_b})`;
+                      }).join(" e ")
+                    : null;
+
+                  if (c.old_rank === c.new_rank) {
+                    const leader = c.new_rank === 1 ? "líder" : `em ${c.new_rank}º lugar`;
+                    const pts = `com ${c.total_points}pts`;
+                    const bonus = c.points_earned > 0 ? ` (+${c.points_earned}pts na rodada)` : "";
+                    return (
+                      <p key={c.display_name} className="text-[11px] leading-relaxed">
+                        — {c.display_name} continua {leader} {pts}{bonus}
+                      </p>
+                    );
+                  }
+
+                  const movement = c.new_rank < c.old_rank ? "subiu" : "caiu";
+                  const fromTo = `${c.display_name} ${movement} do ${c.old_rank}º para o ${c.new_rank}º lugar`;
+                  const detail = reason
+                    ? `(${reason} = +${c.points_earned}pts)`
+                    : `(+${c.points_earned}pts na rodada)`;
                   return (
-                    <div
-                      key={entry.display_name}
-                      className="flex justify-between items-center border-b border-black/5 pb-2 last:border-0 last:pb-0"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isTop && <span className="text-sm shrink-0">👑</span>}
-                        <span className="font-bold uppercase text-xs truncate">
-                          {entry.display_name}
-                        </span>
-                        <span className="text-[10px] text-black/40 whitespace-nowrap">
-                          {entry.correct_count} acerto{entry.correct_count !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="text-right shrink-0 ml-3">
-                        <span className="font-display text-lg text-[color:var(--brand-green)]">
-                          +{entry.points_earned}
-                        </span>
-                        <span className="text-[10px] text-black/40 ml-1">pts</span>
-                        <span className="text-[10px] text-black/40 ml-2">
-                          (total: {entry.total_points})
-                        </span>
-                      </div>
-                    </div>
+                    <p key={c.display_name} className="text-[11px] leading-relaxed">
+                      — {fromTo} {detail}
+                    </p>
                   );
                 })}
               </div>
