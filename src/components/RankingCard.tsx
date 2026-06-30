@@ -13,7 +13,7 @@ export function RankingCard({ rank, name, points, correct, isMe }: Props) {
         isMe ? "bg-[color:var(--brand-yellow)]" : "bg-white"
       }`}
     >
-      <div className="w-12 h-12 brutal-border bg-[color:var(--brand-blue)] text-white flex items-center justify-center font-display text-2xl">
+      <div className="w-12 h-12 brutal-border bg-brand-blue-gradient text-white flex items-center justify-center font-display text-2xl">
         {rank}
       </div>
       <div className="flex-1 min-w-0">

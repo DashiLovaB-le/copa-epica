@@ -82,13 +82,15 @@ function AuthPage() {
     >
       <Toaster position="top-center" />
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white brutal-border brutal-shadow-yellow p-6 space-y-5">
+        <div className="w-full max-w-md flex flex-col items-center space-y-5">
+          <img src="/assets/logo.png" alt="PalpiteCLUB" className="h-16 object-contain" />
+          <div className="w-full bg-white brutal-border brutal-shadow-yellow p-6 space-y-5">
           <div className="flex">
             <button
               type="button"
               onClick={() => setMode("login")}
               className={`flex-1 py-3 brutal-border border-r-0 font-display text-2xl ${
-                mode === "login" ? "bg-[color:var(--brand-blue)] text-white" : "bg-white text-black"
+                mode === "login" ? "bg-brand-blue-gradient text-white" : "bg-white text-black"
               }`}
             >
               Entrar
@@ -155,6 +157,7 @@ function AuthPage() {
               {loading ? "..." : mode === "login" ? "Entrar no jogo" : "Criar conta"}
             </button>
           </form>
+        </div>
         </div>
       </main>
     </div>

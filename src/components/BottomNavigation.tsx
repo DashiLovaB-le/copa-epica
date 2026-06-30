@@ -19,7 +19,7 @@ export function BottomNavigation() {
           <li key={it.to}>
             <Link
               to={it.to}
-              className="flex flex-col items-center justify-center gap-1 py-3 font-bold uppercase text-[10px] tracking-widest text-black data-[status=active]:bg-[color:var(--brand-blue)] data-[status=active]:text-white border-r-[3px] last:border-r-0 border-black"
+              className="flex flex-col items-center justify-center gap-1 py-3 font-bold uppercase text-[10px] tracking-widest text-black data-[status=active]:bg-brand-blue-gradient data-[status=active]:text-white border-r-[3px] last:border-r-0 border-black"
               activeOptions={{ exact: false }}
             >
               <img src={it.icon} alt="" className="w-6 h-6 object-contain" />

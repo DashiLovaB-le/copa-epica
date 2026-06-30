@@ -298,21 +298,21 @@ function RankingPage() {
   if (isLoading) {
     return (
       <div className="animate-in fade-in duration-300" style={{ viewTransitionName: "page-ranking" } as any}>
-        <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
         </header>
         <div className="p-4 space-y-3">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="brutal-border bg-white p-4 animate-in fade-in duration-300"
+              className="brutal-border bg-card p-4 animate-in fade-in duration-300"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <Skeleton className="h-5 w-24 mb-2" />
               <Skeleton className="h-8 w-32" />
             </div>
           ))}
-          <div className="h-0 border-t-[3px] border-black" />
+          <div className="h-0 border-t-[3px] border-border" />
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
@@ -331,7 +331,7 @@ function RankingPage() {
 
   return (
     <div style={{ viewTransitionName: "page-ranking" } as any}>
-      <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
         <h1 className="text-4xl font-display tracking-wider leading-none">
           RANKING GERAL
         </h1>
@@ -342,12 +342,12 @@ function RankingPage() {
       </header>
 
       <div className="p-4 space-y-6">
-        <div className="h-0 border-t-[3px] border-black" />
+        <div className="h-0 border-t-[3px] border-border" />
 
         {userEntry && (
           <>
-            <div className="bg-white brutal-border brutal-shadow p-5 flex flex-col items-center gap-1">
-              <p className="text-[11px] uppercase font-bold tracking-widest text-black/60">
+            <div className="bg-card brutal-border brutal-shadow p-5 flex flex-col items-center gap-1">
+              <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">
                 SUA POSIÇÃO
               </p>
               <p className="font-display text-6xl leading-none text-[color:var(--brand-blue)]">
@@ -355,12 +355,12 @@ function RankingPage() {
               </p>
               <p className="font-display text-3xl leading-none">
                 {userEntry.points}{" "}
-                <span className="font-sans text-sm font-bold text-black/60 uppercase">
+                <span className="font-sans text-sm font-bold text-muted-foreground uppercase">
                   pontos
                 </span>
               </p>
               {gapToTop3 !== null && gapToTop3 > 0 && (
-                <p className="text-[11px] uppercase font-bold tracking-widest text-black/60">
+                <p className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">
                   Faltam {gapToTop3} pontos para o Top 3
                 </p>
               )}
@@ -370,7 +370,7 @@ function RankingPage() {
                 </p>
               )}
             </div>
-            <div className="h-0 border-t-[3px] border-black" />
+            <div className="h-0 border-t-[3px] border-border" />
           </>
         )}
 
@@ -387,7 +387,7 @@ function RankingPage() {
                       position={2}
                       name={top3[1].display_name}
                       points={top3[1].points}
-                      className="bg-[color:var(--brand-yellow)] text-black"
+                      className="bg-[color:var(--brand-yellow)] text-foreground"
                       heightClass="pt-6 pb-2"
                     />
                   )}
@@ -409,14 +409,14 @@ function RankingPage() {
                       position={3}
                       name={top3[2].display_name}
                       points={top3[2].points}
-                      className="bg-white text-black"
+                      className="bg-card text-foreground"
                       heightClass="pt-3 pb-2"
                     />
                   )}
                 </div>
               </div>
             </div>
-            <div className="h-0 border-t-[3px] border-black" />
+            <div className="h-0 border-t-[3px] border-border" />
           </>
         )}
 
@@ -426,10 +426,10 @@ function RankingPage() {
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
                 TABELA COMPLETA
               </p>
-              <div className="bg-white brutal-border overflow-x-auto">
+              <div className="bg-card brutal-border overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b-[3px] border-black text-[10px] uppercase font-bold tracking-widest">
+                    <tr className="border-b-[3px] border-border text-[10px] uppercase font-bold tracking-widest">
                       <th className="p-3 w-12 text-center">#</th>
                       <th className="p-3">Participante</th>
                       <th className="p-3 text-center">Acertos</th>
@@ -442,8 +442,8 @@ function RankingPage() {
                       return (
                         <tr
                           key={r.id}
-                          className={`animate-in fade-in slide-in-from-bottom-1 duration-200 border-b border-black/10 text-sm transition-all hover:bg-neutral-100 ${
-                            isMe ? "bg-[color:var(--brand-yellow)] ring-2 ring-black hover:bg-[color:var(--brand-yellow)]" : ""
+                          className={`animate-in fade-in slide-in-from-bottom-1 duration-200 border-b border-border/10 text-sm transition-all hover:bg-muted ${
+                            isMe ? "bg-[color:var(--brand-yellow)] ring-2 ring-border hover:bg-[color:var(--brand-yellow)]" : ""
                           }`}
                           style={{ animationDelay: `${i * 40}ms` }}
                         >
@@ -451,8 +451,8 @@ function RankingPage() {
                             <span
                               className={`inline-flex items-center justify-center w-7 h-7 font-display text-base ${
                                 r.rank <= 3
-                                  ? "bg-[color:var(--brand-blue)] text-white"
-                                  : "text-black"
+                                  ? "bg-brand-blue-gradient text-white"
+                                  : "text-foreground"
                               }`}
                             >
                               {r.rank}
@@ -462,13 +462,13 @@ function RankingPage() {
                             <span className="flex items-center gap-2">
                               {r.display_name}
                               {isMe && (
-                                <span className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 leading-none shrink-0">
+                                <span className="bg-foreground text-white text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 leading-none shrink-0">
                                   VOCÊ
                                 </span>
                               )}
                             </span>
                           </td>
-                          <td className="p-3 text-center font-bold text-black/60 align-middle">
+                          <td className="p-3 text-center font-bold text-muted-foreground align-middle">
                             {r.correct_guesses}
                           </td>
                           <td className="p-3 text-right font-display text-xl leading-none align-middle">
@@ -481,7 +481,7 @@ function RankingPage() {
                 </table>
               </div>
             </div>
-            <div className="h-0 border-t-[3px] border-black" />
+            <div className="h-0 border-t-[3px] border-border" />
           </>
         )}
 
@@ -490,7 +490,7 @@ function RankingPage() {
             <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
               ESTATÍSTICAS
             </p>
-            <div className="bg-white brutal-border p-4 space-y-3">
+            <div className="bg-card brutal-border p-4 space-y-3">
               <StatRow label="Maior pontuação" value={String(maxPoints)} />
               <StatRow label="Sua pontuação" value={String(userEntry.points)} />
               <StatRow
@@ -500,8 +500,8 @@ function RankingPage() {
               <StatRow label="Posição atual" value={`${userEntry.rank}º`} />
               <StatRow label="Diferença total nos placares" value={String(userEntry.total_score_diff)} />
             </div>
-            <div className="mt-3 bg-neutral-50 brutal-border p-3 text-[11px] leading-relaxed text-black/70 space-y-1">
-              <p className="font-bold text-black uppercase tracking-widest text-[10px]">Critério de desempate do Ranking</p>
+            <div className="mt-3 bg-muted/50 brutal-border p-3 text-[11px] leading-relaxed text-muted-foreground space-y-1">
+              <p className="font-bold text-foreground uppercase tracking-widest text-[10px]">Critério de desempate do Ranking</p>
               <p>O ranking é ordenado nesta sequência:</p>
               <p><strong>1º — Pontos totais</strong> (maior → menor)</p>
               <p><strong>2º — Placar mais próximo</strong> (soma da diferença absoluta entre palpite e resultado real em todos os jogos, menor → melhor)</p>
@@ -514,13 +514,13 @@ function RankingPage() {
 
         {roundFeedback && changes && changes.length > 0 && (
           <>
-            <div className="h-0 border-t-[3px] border-black" />
+            <div className="h-0 border-t-[3px] border-border" />
             <div>
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
                 {getPhaseInfo(roundFeedback.phase).emoji} FECHAMENTO — {getPhaseInfo(roundFeedback.phase).label}
               </p>
-              <div className="bg-white brutal-border brutal-shadow p-4 space-y-2">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+              <div className="bg-card brutal-border brutal-shadow p-4 space-y-2">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                   Mudanças no ranking:
                 </p>
                 {changes.map((c) => {
@@ -562,7 +562,7 @@ function RankingPage() {
         )}
 
         {participants.length === 0 && (
-          <div className="bg-white brutal-border p-6 text-center">
+          <div className="bg-card brutal-border p-6 text-center">
             <p className="font-display text-2xl">Ninguém pontuou ainda</p>
           </div>
         )}
@@ -587,7 +587,7 @@ function PodiumCard({
   const emoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
     <div
-      className={`brutal-border w-full text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[4px_4px_0_0_#000] ${heightClass} ${className}`}
+      className={`brutal-border w-full text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[4px_4px_0_0_var(--color-border)] ${heightClass} ${className}`}
     >
       <p className="text-lg mb-0.5 leading-none">{emoji[position]}</p>
       <p className="font-bold uppercase text-[10px] truncate w-full leading-tight">{name}</p>
