@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScoreInput } from "@/components/ScoreInput";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatMatchDate, formatCountdown } from "@/lib/format";
 import { updateResults } from "@/lib/api/update-results.functions";
 import { toast } from "sonner";
@@ -216,7 +217,7 @@ function PalpitesPage() {
 
   if (isLoading) {
     return (
-      <div className="pb-4 animate-in fade-in duration-200">
+      <div className="pb-4 animate-in fade-in duration-300" style={{ viewTransitionName: "page-palpites" } as any}>
         <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider leading-none">BOLÃO DA COPA</h1>
           <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
@@ -224,19 +225,23 @@ function PalpitesPage() {
           </p>
         </header>
         <div className="bg-black text-white brutal-border border-x-0 border-t-0 p-4">
-          <div className="h-6 w-32 animate-pulse bg-neutral-600" />
+          <Skeleton className="h-6 w-32 bg-neutral-600" />
         </div>
         <div className="flex brutal-border border-x-0 border-t-0">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex-1 h-11 animate-pulse bg-neutral-200" />
+            <Skeleton key={i} className="flex-1 h-11 bg-neutral-200" />
           ))}
         </div>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="brutal-border bg-white p-4 space-y-3 animate-pulse">
-              <div className="h-5 w-48 mx-auto bg-neutral-200" />
-              <div className="h-8 w-64 mx-auto bg-neutral-200" />
-              <div className="h-12 w-full bg-neutral-200" />
+            <div
+              key={i}
+              className="brutal-border bg-white p-4 space-y-3 animate-in fade-in duration-300"
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <Skeleton className="h-5 w-48 mx-auto" />
+              <Skeleton className="h-8 w-64 mx-auto" />
+              <Skeleton className="h-12 w-full" />
             </div>
           ))}
         </div>
@@ -245,7 +250,7 @@ function PalpitesPage() {
   }
 
   return (
-    <div className="pb-4">
+    <div className="pb-4" style={{ viewTransitionName: "page-palpites" } as any}>
       <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
         <div className="flex items-end justify-between gap-4">
           <div>

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
@@ -91,6 +92,67 @@ async function fetchLatestRound() {
   return data?.round_number ?? null;
 }
 
+type RoundFeedback = {
+  round: number;
+  entries: {
+    display_name: string;
+    points_earned: number;
+    correct_count: number;
+    total_points: number;
+  }[];
+};
+
+async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
+  const { data: latest } = await supabase
+    .from("copaepica_matches")
+    .select("round_number")
+    .not("result_a", "is", null)
+    .order("round_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latest) return null;
+
+  const { data: matches } = await supabase
+    .from("copaepica_matches")
+    .select("id")
+    .eq("round_number", latest.round_number)
+    .not("result_a", "is", null);
+  if (!matches?.length) return null;
+
+  const matchIds = matches.map(m => m.id);
+
+  const [profilesRes, predsRes] = await Promise.all([
+    supabase.from("copaepica_profiles").select("id, display_name, points"),
+    supabase
+      .from("copaepica_predictions")
+      .select("user_id, points_earned, is_correct")
+      .in("match_id", matchIds),
+  ]);
+  if (!profilesRes.data?.length || !predsRes.data?.length) return null;
+
+  const profileMap = new Map(profilesRes.data.map(p => [p.id, p]));
+  const acc = new Map<string, { points_earned: number; correct_count: number }>();
+
+  for (const p of predsRes.data) {
+    const entry = acc.get(p.user_id) || { points_earned: 0, correct_count: 0 };
+    entry.points_earned += p.points_earned ?? 0;
+    if (p.is_correct) entry.correct_count++;
+    acc.set(p.user_id, entry);
+  }
+
+  const entries = Array.from(acc.entries())
+    .filter(([id]) => profileMap.has(id))
+    .map(([id, data]) => ({
+      display_name: profileMap.get(id)!.display_name,
+      points_earned: data.points_earned,
+      correct_count: data.correct_count,
+      total_points: profileMap.get(id)!.points,
+    }))
+    .sort((a, b) => b.points_earned - a.points_earned);
+
+  return { round: latest.round_number, entries };
+}
+
 function RankingPage() {
   const { user } = Route.useRouteContext();
   const qc = useQueryClient();
@@ -105,6 +167,11 @@ function RankingPage() {
     queryFn: fetchLatestRound,
   });
 
+  const { data: roundFeedback } = useQuery({
+    queryKey: ["round-feedback"],
+    queryFn: fetchRoundFeedback,
+  });
+
   useEffect(() => {
     let mounted = true;
     const cb = () => { if (mounted) qc.invalidateQueries({ queryKey: ["ranking"] }); };
@@ -117,23 +184,31 @@ function RankingPage() {
 
   if (isLoading) {
     return (
-      <div className="animate-in fade-in duration-200">
+      <div className="animate-in fade-in duration-300" style={{ viewTransitionName: "page-ranking" } as any}>
         <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
         </header>
         <div className="p-4 space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="brutal-border bg-white p-4 animate-pulse">
-              <div className="h-5 w-24 bg-neutral-200 mb-2" />
-              <div className="h-8 w-32 bg-neutral-200" />
+            <div
+              key={i}
+              className="brutal-border bg-white p-4 animate-in fade-in duration-300"
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <Skeleton className="h-5 w-24 mb-2" />
+              <Skeleton className="h-8 w-32" />
             </div>
           ))}
           <div className="h-0 border-t-[3px] border-black" />
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-3 animate-pulse">
-              <div className="w-8 h-8 bg-neutral-200" />
-              <div className="flex-1 h-5 bg-neutral-200" />
-              <div className="w-12 h-5 bg-neutral-200" />
+            <div
+              key={i}
+              className="flex items-center gap-3 animate-in fade-in duration-200"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <Skeleton className="w-8 h-8" />
+              <Skeleton className="flex-1 h-5" />
+              <Skeleton className="w-12 h-5" />
             </div>
           ))}
         </div>
@@ -151,7 +226,7 @@ function RankingPage() {
       : null;
 
   return (
-    <div>
+    <div style={{ viewTransitionName: "page-ranking" } as any}>
       <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
         <h1 className="text-4xl font-display tracking-wider leading-none">
           RANKING GERAL
@@ -331,6 +406,47 @@ function RankingPage() {
               <p>Isso garante que, mesmo que dois participantes tenham exatamente os mesmos pontos, o desempate será justo — primeiro pela precisão dos palpites (quem chutou mais perto), e depois por quem se comprometeu primeiro.</p>
             </div>
           </div>
+        )}
+
+        {roundFeedback && (
+          <>
+            <div className="h-0 border-t-[3px] border-black" />
+            <div>
+              <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
+                ⚡ FECHAMENTO DA RODADA {roundFeedback.round}
+              </p>
+              <div className="bg-white brutal-border brutal-shadow p-4 space-y-3">
+                {roundFeedback.entries.map((entry, i) => {
+                  const isTop = i === 0;
+                  return (
+                    <div
+                      key={entry.display_name}
+                      className="flex justify-between items-center border-b border-black/5 pb-2 last:border-0 last:pb-0"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isTop && <span className="text-sm shrink-0">👑</span>}
+                        <span className="font-bold uppercase text-xs truncate">
+                          {entry.display_name}
+                        </span>
+                        <span className="text-[10px] text-black/40 whitespace-nowrap">
+                          {entry.correct_count} acerto{entry.correct_count !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <span className="font-display text-lg text-[color:var(--brand-green)]">
+                          +{entry.points_earned}
+                        </span>
+                        <span className="text-[10px] text-black/40 ml-1">pts</span>
+                        <span className="text-[10px] text-black/40 ml-2">
+                          (total: {entry.total_points})
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
 
         {participants.length === 0 && (

@@ -112,3 +112,62 @@
 @utility animate-bounce-ball {
   animation: bounce-ball 0.6s ease-in-out infinite;
 }
+
+/* ── View Transitions API ── */
+::view-transition-old(root) {
+  animation: 150ms ease-out both vt-fade-out;
+}
+::view-transition-new(root) {
+  animation: 300ms ease-out both vt-fade-in;
+}
+
+::view-transition-old(page-palpites),
+::view-transition-old(page-ranking),
+::view-transition-old(page-rodadas),
+::view-transition-old(page-perfil),
+::view-transition-old(page-auth) {
+  animation: 200ms ease-out both vt-fade-out, 300ms ease-out both vt-slide-out-left;
+}
+
+::view-transition-new(page-palpites),
+::view-transition-new(page-ranking),
+::view-transition-new(page-rodadas),
+::view-transition-new(page-perfil),
+::view-transition-new(page-auth) {
+  animation: 400ms ease-out both vt-fade-in, 300ms ease-out both vt-slide-in-right;
+}
+
+::view-transition-old(bottom-nav) {
+  animation: none;
+}
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes vt-slide-out-left {
+  to { translate: -8% 0; opacity: 0; }
+}
+
+@keyframes vt-slide-in-right {
+  from { translate: 8% 0; opacity: 0; }
+}
+
+/* ── Shimmer skeleton effect ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+}

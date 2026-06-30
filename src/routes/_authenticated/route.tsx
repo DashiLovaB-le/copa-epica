@@ -17,10 +17,12 @@ function AuthedLayout() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <Toaster position="top-center" />
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div>
         <Outlet />
       </div>
-      <BottomNavigation />
+      <div style={{ viewTransitionName: "bottom-nav" }}>
+        <BottomNavigation />
+      </div>
     </div>
   );
 }
