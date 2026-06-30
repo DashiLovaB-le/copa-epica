@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "palpiteclub-theme";
+const STORAGE_KEY = "copaepica-theme";
 
 type Theme = "dark" | "light";
 

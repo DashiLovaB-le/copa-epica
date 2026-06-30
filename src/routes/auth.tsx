@@ -83,7 +83,7 @@ function AuthPage() {
       <Toaster position="top-center" />
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md flex flex-col items-center space-y-5">
-          <img src="/assets/logo.png" alt="PalpiteCLUB" className="h-16 object-contain" />
+          <img src="/assets/logo.png" alt="CopaEpica" className="h-16 object-contain" />
           <div className="w-full bg-white brutal-border brutal-shadow-yellow p-6 space-y-5">
           <div className="flex">
             <button
