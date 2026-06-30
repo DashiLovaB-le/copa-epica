@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Toaster } from "@/components/ui/sonner";
+import BgAnimation from "@/components/ui/shader-background";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthedLayout() {
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24">
+      <BgAnimation />
       <Toaster position="top-center" />
       <div>
         <Outlet />
