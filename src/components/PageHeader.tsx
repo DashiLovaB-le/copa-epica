@@ -10,7 +10,7 @@ export function PageHeader({
   right?: ReactNode;
 }) {
   return (
-    <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+    <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-display tracking-wider leading-none">{title}</h1>

@@ -90,7 +90,7 @@ function AuthPage() {
               type="button"
               onClick={() => setMode("login")}
               className={`flex-1 py-3 brutal-border border-r-0 font-display text-2xl ${
-                mode === "login" ? "bg-[color:var(--brand-blue)] text-white" : "bg-white text-black"
+                mode === "login" ? "bg-brand-blue-gradient text-white" : "bg-white text-black"
               }`}
             >
               Entrar

@@ -6,7 +6,7 @@ type Props = {
 
 export function UserStatsCard({ label, value, color = "white" }: Props) {
   const colors = {
-    blue: "bg-[color:var(--brand-blue)] text-white",
+    blue: "bg-brand-blue-gradient text-white",
     green: "bg-[color:var(--brand-green)] text-white",
     yellow: "bg-[color:var(--brand-yellow)] text-black",
     white: "bg-white text-black",

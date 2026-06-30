@@ -181,7 +181,7 @@ function PerfilPage() {
   if (loading) {
     return (
       <div className="pb-4 animate-in fade-in duration-300" style={{ viewTransitionName: "page-perfil" } as any}>
-        <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider leading-none">MEU PERFIL</h1>
           <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
             ...
@@ -277,7 +277,7 @@ function PerfilPage() {
 
   return (
     <div className="pb-4" style={{ viewTransitionName: "page-perfil" } as any}>
-      <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
         <h1 className="text-4xl font-display tracking-wider leading-none">
           MEU PERFIL
         </h1>
@@ -503,7 +503,7 @@ function PerfilPage() {
 
             <button
               onClick={toggleTheme}
-              className="w-full bg-[color:var(--brand-blue)] text-white brutal-border py-3 font-display text-xl tracking-wider"
+              className="w-full bg-brand-blue-gradient text-white brutal-border py-3 font-display text-xl tracking-wider"
             >
               {theme === "dark" ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
             </button>

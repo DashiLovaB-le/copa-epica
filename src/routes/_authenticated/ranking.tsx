@@ -298,7 +298,7 @@ function RankingPage() {
   if (isLoading) {
     return (
       <div className="animate-in fade-in duration-300" style={{ viewTransitionName: "page-ranking" } as any}>
-        <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
         </header>
         <div className="p-4 space-y-3">
@@ -331,7 +331,7 @@ function RankingPage() {
 
   return (
     <div style={{ viewTransitionName: "page-ranking" } as any}>
-      <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
+      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
         <h1 className="text-4xl font-display tracking-wider leading-none">
           RANKING GERAL
         </h1>
@@ -451,7 +451,7 @@ function RankingPage() {
                             <span
                               className={`inline-flex items-center justify-center w-7 h-7 font-display text-base ${
                                 r.rank <= 3
-                                  ? "bg-[color:var(--brand-blue)] text-white"
+                                  ? "bg-brand-blue-gradient text-white"
                                   : "text-foreground"
                               }`}
                             >
