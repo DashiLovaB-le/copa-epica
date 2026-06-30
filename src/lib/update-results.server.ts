@@ -155,8 +155,7 @@ export async function updateMatchResults(): Promise<UpdateResult> {
     const homeEn = apiMatch.homeTeam?.name ?? "";
     const awayEn = apiMatch.awayTeam?.name ?? "";
     if (!homeEn || !awayEn) {
-      result.failed.push({ match: `${homeEn} vs ${awayEn}`, reason: "Time vazio na API" });
-      continue;
+      continue; // jogos com times ainda indefinidos (ex: fases futuras)
     }
 
     const matchDate = apiMatch.utcDate;
