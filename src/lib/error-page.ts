@@ -6,14 +6,14 @@ export function renderErrorPage(): string {
     <title>This page didn't load</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #0F1115; color: #FFFFFF; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #F8FAFC; color: #111827; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
       .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
-      h1 { font-size: 1.25rem; margin: 0 0 0.5rem; color: #FFFFFF; }
-      p { color: #C7CDD4; margin: 0 0 1.5rem; }
+      h1 { font-size: 1.25rem; margin: 0 0 0.5rem; color: #111827; }
+      p { color: #6B7280; margin: 0 0 1.5rem; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
       a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
-      .primary { background: #8CC63E; color: #0F1115; }
-      .secondary { background: transparent; color: #FFFFFF; border-color: #303841; }
+      .primary { background: #2563EB; color: #FFFFFF; }
+      .secondary { background: transparent; color: #111827; border-color: #E2E8F0; }
     </style>
   </head>
   <body>

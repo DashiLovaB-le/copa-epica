@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { getStoredTheme, applyTheme } from "../hooks/use-theme";
 
 function NotFoundComponent() {
   return (
@@ -79,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
       { title: "Copa Épica — Palpites e Ranking" },
       { name: "description", content: "App brutalista de palpites esportivos. Marque presença no ranking da Copa Épica." },
-      { name: "theme-color", content: "#0F1115" },
+      { name: "theme-color", content: "#2563EB" },
       { property: "og:title", content: "Copa Épica — Palpites e Ranking" },
       { property: "og:description", content: "App brutalista de palpites esportivos. Marque presença no ranking da Copa Épica." },
       { property: "og:type", content: "website" },
@@ -90,13 +91,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdf1761a-6488-4c88-a8c1-6dae2dc9787e/id-preview-172b41c2--30fe4bfb-1c1c-4517-b45c-eb3890fd1a0f.lovable.app-1781213842463.png" },
     ],
     links: [
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/x-icon", href: "/assets/favicon.ico" },
+      { rel: "shortcut icon", href: "/assets/favicon.ico" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&family=Chakra+Petch:wght@400;500;600;700;800;900&family=Chakra+Petch+Mono:wght@400;500;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Chakra+Petch:wght@400;500;600;700;800;900&family=Chakra+Petch+Mono:wght@400;500;700&display=swap",
       },
     ],
   }),
@@ -123,6 +125,10 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  useEffect(() => {
+    applyTheme(getStoredTheme());
+  }, []);
 
   useEffect(() => {
     let mounted = true;

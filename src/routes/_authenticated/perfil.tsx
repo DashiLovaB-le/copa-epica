@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/hooks/use-theme";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -137,6 +138,7 @@ async function fetchRoundHistory(userId: string): Promise<RoundSummary[]> {
 
 function PerfilPage() {
   const { user } = Route.useRouteContext();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -186,7 +188,7 @@ function PerfilPage() {
           </p>
         </header>
         <div className="p-4 space-y-6">
-          <div className="bg-white brutal-border p-4 space-y-2 animate-in fade-in duration-300">
+          <div className="bg-card brutal-border p-4 space-y-2 animate-in fade-in duration-300">
             <Skeleton className="h-9 w-48" />
             <Skeleton className="h-4 w-64" />
           </div>
@@ -194,7 +196,7 @@ function PerfilPage() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="bg-white brutal-border p-4 animate-in fade-in duration-300"
+                className="bg-card brutal-border p-4 animate-in fade-in duration-300"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <Skeleton className="h-4 w-20 mb-2" />
@@ -202,7 +204,7 @@ function PerfilPage() {
               </div>
             ))}
           </div>
-          <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2 animate-in fade-in duration-300">
+          <div className="bg-card brutal-border brutal-shadow p-4 text-center space-y-2 animate-in fade-in duration-300">
             <Skeleton className="h-4 w-32 mx-auto" />
             <Skeleton className="h-12 w-24 mx-auto" />
           </div>
@@ -286,13 +288,13 @@ function PerfilPage() {
 
       <div className="p-4 space-y-6">
         {/* Informações do Usuário */}
-        <div className="bg-white brutal-border p-4 space-y-2">
+        <div className="bg-card brutal-border p-4 space-y-2">
           <p className="font-display text-3xl">
             {profile?.display_name ?? "..."}
           </p>
-          <p className="text-sm text-black/60">{user.email}</p>
+          <p className="text-sm text-muted-foreground">{user.email}</p>
           {joinedAt && (
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/40">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
               Participante desde {joinedAt}
             </p>
           )}
@@ -300,32 +302,32 @@ function PerfilPage() {
 
         {/* Estatísticas Principais — grid 2x2 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white brutal-border p-4">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <div className="bg-card brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
               🏆 PONTOS
             </p>
             <p className="font-display text-4xl leading-tight mt-1">
               {profile?.points ?? 0}
             </p>
           </div>
-          <div className="bg-white brutal-border p-4">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <div className="bg-card brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
               🎯 ACERTOS
             </p>
             <p className="font-display text-4xl leading-tight mt-1">
               {profile?.correct_guesses ?? 0}
             </p>
           </div>
-          <div className="bg-white brutal-border p-4">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <div className="bg-card brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
               ❌ ERROS
             </p>
             <p className="font-display text-4xl leading-tight mt-1">
               {profile?.incorrect_guesses ?? 0}
             </p>
           </div>
-          <div className="bg-white brutal-border p-4">
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <div className="bg-card brutal-border p-4">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
               🏅 POSIÇÃO
             </p>
             <p className="font-display text-4xl leading-tight mt-1">
@@ -335,12 +337,12 @@ function PerfilPage() {
         </div>
 
         {/* Aproveitamento */}
-        <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2">
-          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <div className="bg-card brutal-border brutal-shadow p-4 text-center space-y-2">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             APROVEITAMENTO
           </p>
           <p className="font-display text-5xl">{accuracy}%</p>
-          <div className="border-t border-black/10 pt-2 text-[10px] uppercase font-bold tracking-widest text-black/40 space-y-0.5">
+          <div className="border-t border-border/50 pt-2 text-[10px] uppercase font-bold tracking-widest text-muted-foreground space-y-0.5">
             <p>{profile?.correct_guesses ?? 0} acertos</p>
             <p>{total} palpites</p>
           </div>
@@ -349,11 +351,11 @@ function PerfilPage() {
         {/* Últimas Rodadas */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
             <h2 className="font-display text-2xl whitespace-nowrap">
               ÚLTIMAS RODADAS
             </h2>
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
           </div>
 
           {roundHistory && roundHistory.length > 0 ? (
@@ -361,7 +363,7 @@ function PerfilPage() {
               {roundHistory.map((r) => (
                 <div
                   key={r.round_number}
-                  className="bg-white brutal-border p-3 flex items-center justify-between"
+                  className="bg-card brutal-border p-3 flex items-center justify-between"
                 >
                   <span className="font-bold text-xs uppercase tracking-widest">
                     Rodada {r.round_number}
@@ -373,8 +375,8 @@ function PerfilPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white brutal-border p-4 text-center">
-              <p className="font-display text-lg text-black/40">
+            <div className="bg-card brutal-border p-4 text-center">
+              <p className="font-display text-lg text-muted-foreground">
                 Nenhuma rodada finalizada
               </p>
             </div>
@@ -384,14 +386,14 @@ function PerfilPage() {
         {/* Conquistas */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
             <h2 className="font-display text-2xl whitespace-nowrap">
               CONQUISTAS
             </h2>
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
           </div>
 
-          <div className="bg-white brutal-border p-4">
+          <div className="bg-card brutal-border p-4">
             <div className="grid grid-cols-2 gap-3">
               {achievements.map((a) => (
                 <div
@@ -399,7 +401,7 @@ function PerfilPage() {
                   className={`p-3 text-center brutal-border ${
                     a.unlocked
                       ? "bg-[color:var(--brand-yellow)]"
-                      : "bg-neutral-100 opacity-40"
+                      : "bg-muted opacity-40"
                   }`}
                 >
                   <p className="text-2xl">{a.icon}</p>
@@ -415,14 +417,14 @@ function PerfilPage() {
         {/* Configurações */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
             <h2 className="font-display text-2xl whitespace-nowrap">
               CONFIGURAÇÕES
             </h2>
-            <div className="flex-1 h-[3px] bg-black" />
+            <div className="flex-1 h-[3px] bg-border" />
           </div>
 
-          <div className="bg-white brutal-border p-4 space-y-3">
+          <div className="bg-card brutal-border p-4 space-y-3">
             {editing ? (
               <div className="space-y-3">
                 <input
@@ -441,7 +443,7 @@ function PerfilPage() {
                   </button>
                   <button
                     onClick={() => setEditing(false)}
-                    className="flex-1 bg-white text-black brutal-border py-3 font-display text-xl"
+                    className="flex-1 bg-card text-foreground brutal-border py-3 font-display text-xl"
                   >
                     Cancelar
                   </button>
@@ -453,7 +455,7 @@ function PerfilPage() {
                   setName(profile?.display_name ?? "");
                   setEditing(true);
                 }}
-                className="w-full bg-white text-black brutal-border py-3 font-display text-xl tracking-wider"
+                className="w-full bg-card text-foreground brutal-border py-3 font-display text-xl tracking-wider"
               >
                 ✏️ Editar Perfil
               </button>
@@ -477,7 +479,7 @@ function PerfilPage() {
                   </button>
                   <button
                     onClick={() => setChangingPassword(false)}
-                    className="flex-1 bg-white text-black brutal-border py-3 font-display text-xl"
+                    className="flex-1 bg-card text-foreground brutal-border py-3 font-display text-xl"
                   >
                     Cancelar
                   </button>
@@ -486,7 +488,7 @@ function PerfilPage() {
             ) : (
               <button
                 onClick={() => setChangingPassword(true)}
-                className="w-full bg-white text-black brutal-border py-3 font-display text-xl tracking-wider"
+                className="w-full bg-card text-foreground brutal-border py-3 font-display text-xl tracking-wider"
               >
                 🔑 Alterar Senha
               </button>
@@ -494,9 +496,16 @@ function PerfilPage() {
 
             <button
               onClick={handleLogout}
-              className="w-full bg-black text-[color:var(--brand-yellow)] brutal-border brutal-shadow py-3 font-display text-xl tracking-wider"
+              className="w-full bg-foreground text-background brutal-border brutal-shadow py-3 font-display text-xl tracking-wider"
             >
               Sair
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              className="w-full bg-[color:var(--brand-blue)] text-white brutal-border py-3 font-display text-xl tracking-wider"
+            >
+              {theme === "dark" ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
             </button>
           </div>
         </div>
