@@ -587,7 +587,7 @@ function PodiumCard({
   const emoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
     <div
-      className={`brutal-border w-full text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[4px_4px_0_0_#000] ${heightClass} ${className}`}
+      className={`brutal-border w-full text-center flex flex-col items-center transition-all duration-100 hover:-translate-y-1 hover:shadow-[4px_4px_0_0_var(--color-border)] ${heightClass} ${className}`}
     >
       <p className="text-lg mb-0.5 leading-none">{emoji[position]}</p>
       <p className="font-bold uppercase text-[10px] truncate w-full leading-tight">{name}</p>

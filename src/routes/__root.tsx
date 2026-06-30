@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
       { title: "Copa Épica — Palpites e Ranking" },
       { name: "description", content: "App brutalista de palpites esportivos. Marque presença no ranking da Copa Épica." },
-      { name: "theme-color", content: "#002776" },
+      { name: "theme-color", content: "#0F1115" },
       { property: "og:title", content: "Copa Épica — Palpites e Ranking" },
       { property: "og:description", content: "App brutalista de palpites esportivos. Marque presença no ranking da Copa Épica." },
       { property: "og:type", content: "website" },
