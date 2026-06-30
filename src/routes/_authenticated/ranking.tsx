@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { getPhaseName, getPhaseInfo } from "@/lib/phases";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => ({ meta: [{ title: "Ranking — Copa Épica" }] }),
@@ -113,6 +114,7 @@ type RoundFeedbackEntry = {
 
 type RoundFeedback = {
   round: number;
+  phase: string;
   entries: RoundFeedbackEntry[];
 };
 
@@ -141,12 +143,13 @@ async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
   for (const round of uniqueRounds) {
     const { data: matches } = await supabase
       .from("copaepica_matches")
-      .select("id, team_a, team_b, result_a, result_b")
+      .select("id, match_date, team_a, team_b, result_a, result_b")
       .eq("round_number", round)
       .gte("match_date", "2026-06-28")
       .not("result_a", "is", null);
     if (!matches?.length) continue;
 
+    const phase = getPhaseName(matches[0].match_date);
     const matchIds = matches.map(m => m.id);
 
     const { data: preds } = await supabase
@@ -204,7 +207,7 @@ async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
         }))
         .sort((a, b) => b.points_earned - a.points_earned);
 
-      return { round, entries };
+      return { round, phase, entries };
     }
   }
 
@@ -514,7 +517,7 @@ function RankingPage() {
             <div className="h-0 border-t-[3px] border-black" />
             <div>
               <p className="text-[11px] uppercase font-bold tracking-widest mb-3">
-                ⚡ FECHAMENTO DA RODADA {roundFeedback.round}
+                {getPhaseInfo(roundFeedback.phase).emoji} FECHAMENTO — {getPhaseInfo(roundFeedback.phase).label}
               </p>
               <div className="bg-white brutal-border brutal-shadow p-4 space-y-2">
                 <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">

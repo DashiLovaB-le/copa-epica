@@ -121,7 +121,7 @@ export async function updateMatchResults(): Promise<UpdateResult> {
   // 1. Fetch all matches from API (apenas jogos a partir de 28/06 — fases eliminatórias)
   let apiMatches: any[];
   try {
-    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches?dateFrom=2026-06-28`;
+    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches?dateFrom=2026-06-28&dateTo=2026-07-19`;
     const res = await fetch(url, {
       headers: { "X-Auth-Token": FOOTBALL_API_KEY },
     });
