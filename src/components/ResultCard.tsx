@@ -27,7 +27,7 @@ export function ResultCard({
   return (
     <article
       className={`brutal-border p-4 space-y-2 ${
-        isCorrect ? "bg-[color:var(--brand-green)] text-white" : "bg-white text-black"
+        isCorrect ? "bg-[color:var(--brand-green)] text-white" : "bg-white dark:bg-card text-black dark:text-white"
       }`}
     >
       <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest opacity-80">

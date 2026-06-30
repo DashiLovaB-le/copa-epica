@@ -237,7 +237,7 @@ function PalpitesPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="brutal-border bg-white p-4 space-y-3 animate-in fade-in duration-300"
+              className="brutal-border bg-white dark:bg-card p-4 space-y-3 animate-in fade-in duration-300"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <Skeleton className="h-5 w-48 mx-auto" />
@@ -293,7 +293,7 @@ function PalpitesPage() {
             className={`flex-1 py-3 font-bold text-xs uppercase tracking-widest transition-colors ${
               filter === f
                 ? "bg-[color:var(--brand-yellow)] text-black"
-                : "bg-white text-black/60 hover:bg-neutral-100"
+                : "bg-white dark:bg-card text-black/60 dark:text-white/60 hover:bg-neutral-100"
             }`}
           >
             {f === "em-breve" ? "EM BREVE" : f.toUpperCase()}
@@ -303,9 +303,9 @@ function PalpitesPage() {
 
       <div className="p-4 space-y-4">
         {filteredMatches.length === 0 ? (
-          <div className="bg-white brutal-border p-6 text-center">
+          <div className="bg-white dark:bg-card brutal-border p-6 text-center">
             <p className="font-display text-2xl">Nenhum jogo encontrado</p>
-            <p className="text-sm mt-2 uppercase font-bold tracking-wider text-black/60">
+            <p className="text-sm mt-2 uppercase font-bold tracking-wider text-black/60 dark:text-white/60">
               {filter === "hoje"
                 ? "Nenhum jogo hoje"
                 : filter === "encerrados"
@@ -315,7 +315,7 @@ function PalpitesPage() {
           </div>
         ) : (
           <>
-            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
               {filter === "todos"
                 ? "TODOS OS JOGOS"
                 : filter === "hoje"
@@ -404,26 +404,26 @@ function GameCard({
 
   if (started) {
     return (
-      <article className="bg-white brutal-border brutal-shadow p-4">
+      <article className="bg-white dark:bg-card brutal-border brutal-shadow p-4">
         <div className="text-center space-y-1">
           <p className="font-display text-2xl">{match.team_a} {flagA}</p>
-          <p className="font-display text-lg text-black/40">VS</p>
+          <p className="font-display text-lg text-black/40 dark:text-white/40">VS</p>
           <p className="font-display text-2xl">{flagB} {match.team_b}</p>
-          <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2">
+          <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60 mt-2">
             {formatMatchDate(match.match_date)}
           </p>
         </div>
         {hasPrediction && (
           <>
-            <div className="border-t border-black/10 mt-3 pt-3 text-center">
-              <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+            <div className="border-t border-black/10 dark:border-white/10 mt-3 pt-3 text-center">
+              <p className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
                 SEU PALPITE
               </p>
               <p className="font-display text-4xl mt-1">
                 {prediction.predicted_a} × {prediction.predicted_b}
               </p>
             </div>
-            <div className="mt-3 bg-neutral-200 text-neutral-700 text-center py-3 font-display text-xl tracking-wider brutal-border">
+            <div className="mt-3 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-center py-3 font-display text-xl tracking-wider brutal-border">
               PALPITE ENCERRADO
             </div>
           </>
@@ -434,17 +434,17 @@ function GameCard({
 
   if (!editing && hasPrediction) {
     return (
-      <article className="bg-white brutal-border brutal-shadow-blue p-4">
+      <article className="bg-white dark:bg-card brutal-border brutal-shadow-blue p-4">
         <div className="text-center space-y-1">
           <p className="font-display text-2xl">{match.team_a} {flagA}</p>
-          <p className="font-display text-lg text-black/40">VS</p>
+          <p className="font-display text-lg text-black/40 dark:text-white/40">VS</p>
           <p className="font-display text-2xl">{flagB} {match.team_b}</p>
-          <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2">
+          <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60 mt-2">
             {formatMatchDate(match.match_date)}
           </p>
         </div>
-        <div className="border-t border-black/10 mt-3 pt-3 text-center">
-          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+        <div className="border-t border-black/10 dark:border-white/10 mt-3 pt-3 text-center">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
             SEU PALPITE
           </p>
           <p className="font-display text-4xl mt-1">
@@ -472,29 +472,29 @@ function GameCard({
   }
 
   return (
-    <article className="bg-white brutal-border brutal-shadow p-4">
+    <article className="bg-white dark:bg-card brutal-border brutal-shadow p-4">
       <div className="text-center space-y-1">
         <p className="font-display text-2xl">{match.team_a} {flagA}</p>
-        <p className="font-display text-lg text-black/40">VS</p>
+        <p className="font-display text-lg text-black/40 dark:text-white/40">VS</p>
         <p className="font-display text-2xl">{flagB} {match.team_b}</p>
-        <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 mt-2">
+        <p className="text-[11px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60 mt-2">
           {formatMatchDate(match.match_date)}
         </p>
       </div>
-      <div className="border-t border-black/10 mt-3 pt-3 text-center">
+      <div className="border-t border-black/10 dark:border-white/10 mt-3 pt-3 text-center">
         {hasPrediction && (
-          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
             SEU PALPITE
           </p>
         )}
         <div className="flex items-end justify-center gap-2 mt-2">
           <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none">{getAbbr(match.team_a)}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60 leading-none">{getAbbr(match.team_a)}</span>
             <ScoreInput value={a} onChange={setA} ariaLabel={`Gols ${match.team_a}`} />
           </div>
           <span className="font-display text-3xl leading-none pb-2">×</span>
           <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 leading-none">{getAbbr(match.team_b)}</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60 leading-none">{getAbbr(match.team_b)}</span>
             <ScoreInput value={b} onChange={setB} ariaLabel={`Gols ${match.team_b}`} />
           </div>
         </div>
@@ -528,7 +528,7 @@ function ResultBlock({
       className={`brutal-border p-4 ${
         isCorrect
           ? "bg-[color:var(--brand-green)] text-white"
-          : "bg-white text-black"
+          : "bg-white dark:bg-card text-black dark:text-white"
       }`}
     >
       <div className="text-center space-y-1">
@@ -542,7 +542,7 @@ function ResultBlock({
       </div>
       {hasPrediction && (
         <>
-          <div className="border-t border-black/10 mt-3 pt-3 text-center">
+          <div className="border-t border-black/10 dark:border-white/10 mt-3 pt-3 text-center">
             <p className="text-[10px] uppercase font-bold tracking-widest opacity-80">
               SEU PALPITE
             </p>

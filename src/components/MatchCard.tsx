@@ -42,8 +42,8 @@ export function MatchCard({
   }
 
   return (
-    <article className="bg-white brutal-border brutal-shadow-blue p-4 space-y-3">
-      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-black/70">
+    <article className="bg-white dark:bg-card brutal-border brutal-shadow-blue p-4 space-y-3">
+      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
         <span>{formatDateTime(matchDate)}</span>
         {locked ? (
           <span className="bg-black text-[color:var(--brand-yellow)] px-2 py-1">FECHADO</span>
