@@ -20,7 +20,7 @@ function AuthedLayout() {
       <div>
         <Outlet />
       </div>
-      <div style={{ viewTransitionName: "bottom-nav" }}>
+      <div style={{ viewTransitionName: "bottom-nav" } as any}>
         <BottomNavigation />
       </div>
     </div>

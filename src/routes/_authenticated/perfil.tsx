@@ -176,7 +176,7 @@ function PerfilPage() {
 
   if (loading) {
     return (
-      <div className="pb-4 animate-in fade-in duration-200">
+      <div className="pb-4 animate-in fade-in duration-300" style={{ viewTransitionName: "page-perfil" } as any}>
         <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
           <h1 className="text-4xl font-display tracking-wider leading-none">MEU PERFIL</h1>
           <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
@@ -184,21 +184,25 @@ function PerfilPage() {
           </p>
         </header>
         <div className="p-4 space-y-6">
-          <div className="bg-white brutal-border p-4 space-y-2 animate-pulse">
-            <div className="h-9 w-48 bg-neutral-200" />
-            <div className="h-4 w-64 bg-neutral-200" />
+          <div className="bg-white brutal-border p-4 space-y-2 animate-in fade-in duration-300">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-64" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white brutal-border p-4 animate-pulse">
-                <div className="h-4 w-20 bg-neutral-200 mb-2" />
-                <div className="h-10 w-16 bg-neutral-200" />
+              <div
+                key={i}
+                className="bg-white brutal-border p-4 animate-in fade-in duration-300"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-10 w-16" />
               </div>
             ))}
           </div>
-          <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2 animate-pulse">
-            <div className="h-4 w-32 mx-auto bg-neutral-200" />
-            <div className="h-12 w-24 mx-auto bg-neutral-200" />
+          <div className="bg-white brutal-border brutal-shadow p-4 text-center space-y-2 animate-in fade-in duration-300">
+            <Skeleton className="h-4 w-32 mx-auto" />
+            <Skeleton className="h-12 w-24 mx-auto" />
           </div>
         </div>
       </div>
@@ -268,7 +272,7 @@ function PerfilPage() {
   ];
 
   return (
-    <div className="pb-4">
+    <div className="pb-4" style={{ viewTransitionName: "page-perfil" } as any}>
       <header className="bg-[color:var(--brand-blue)] text-white brutal-border border-x-0 border-t-0 p-5">
         <h1 className="text-4xl font-display tracking-wider leading-none">
           MEU PERFIL

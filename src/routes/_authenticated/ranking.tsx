@@ -103,54 +103,68 @@ type RoundFeedback = {
 };
 
 async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
-  const { data: latest } = await supabase
+  const { data: roundNumbers } = await supabase
     .from("copaepica_matches")
     .select("round_number")
     .not("result_a", "is", null)
-    .order("round_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!latest) return null;
+    .order("round_number", { ascending: false });
 
-  const { data: matches } = await supabase
-    .from("copaepica_matches")
-    .select("id")
-    .eq("round_number", latest.round_number)
-    .not("result_a", "is", null);
-  if (!matches?.length) return null;
+  if (!roundNumbers?.length) return null;
 
-  const matchIds = matches.map(m => m.id);
+  const uniqueRounds = [...new Set(roundNumbers.map(r => r.round_number))];
 
-  const [profilesRes, predsRes] = await Promise.all([
-    supabase.from("copaepica_profiles").select("id, display_name, points"),
-    supabase
+  for (const round of uniqueRounds) {
+    const { data: matches } = await supabase
+      .from("copaepica_matches")
+      .select("id")
+      .eq("round_number", round)
+      .not("result_a", "is", null);
+    if (!matches?.length) continue;
+
+    const matchIds = matches.map(m => m.id);
+
+    const { data: preds } = await supabase
       .from("copaepica_predictions")
       .select("user_id, points_earned, is_correct")
-      .in("match_id", matchIds),
-  ]);
-  if (!profilesRes.data?.length || !predsRes.data?.length) return null;
+      .in("match_id", matchIds)
+      .limit(1);
 
-  const profileMap = new Map(profilesRes.data.map(p => [p.id, p]));
-  const acc = new Map<string, { points_earned: number; correct_count: number }>();
+    if (preds?.length) {
+      const { data: profiles } = await supabase
+        .from("copaepica_profiles")
+        .select("id, display_name, points");
+      if (!profiles?.length) return null;
 
-  for (const p of predsRes.data) {
-    const entry = acc.get(p.user_id) || { points_earned: 0, correct_count: 0 };
-    entry.points_earned += p.points_earned ?? 0;
-    if (p.is_correct) entry.correct_count++;
-    acc.set(p.user_id, entry);
+      const { data: allPreds } = await supabase
+        .from("copaepica_predictions")
+        .select("user_id, points_earned, is_correct")
+        .in("match_id", matchIds);
+
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      const acc = new Map<string, { points_earned: number; correct_count: number }>();
+
+      for (const p of allPreds ?? []) {
+        const entry = acc.get(p.user_id) || { points_earned: 0, correct_count: 0 };
+        entry.points_earned += p.points_earned ?? 0;
+        if (p.is_correct) entry.correct_count++;
+        acc.set(p.user_id, entry);
+      }
+
+      const entries = Array.from(acc.entries())
+        .filter(([id]) => profileMap.has(id))
+        .map(([id, data]) => ({
+          display_name: profileMap.get(id)!.display_name,
+          points_earned: data.points_earned,
+          correct_count: data.correct_count,
+          total_points: profileMap.get(id)!.points,
+        }))
+        .sort((a, b) => b.points_earned - a.points_earned);
+
+      return { round, entries };
+    }
   }
 
-  const entries = Array.from(acc.entries())
-    .filter(([id]) => profileMap.has(id))
-    .map(([id, data]) => ({
-      display_name: profileMap.get(id)!.display_name,
-      points_earned: data.points_earned,
-      correct_count: data.correct_count,
-      total_points: profileMap.get(id)!.points,
-    }))
-    .sort((a, b) => b.points_earned - a.points_earned);
-
-  return { round: latest.round_number, entries };
+  return null;
 }
 
 function RankingPage() {

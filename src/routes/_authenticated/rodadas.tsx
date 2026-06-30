@@ -139,24 +139,28 @@ function RodadasPage() {
 
   if (isLoading) {
     return (
-      <div className="pb-4 animate-in fade-in duration-200">
+      <div className="pb-4 animate-in fade-in duration-300" style={{ viewTransitionName: "page-rodadas" } as any}>
         <PageHeader title="RODADAS" subtitle="Histórico de resultados" />
         <div className="flex brutal-border border-x-0 border-t-0">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex-1 h-11 animate-pulse bg-neutral-200" />
+            <Skeleton key={i} className="flex-1 h-11 bg-neutral-200" />
           ))}
         </div>
         <div className="p-4 space-y-4">
-          <div className="bg-white brutal-border p-4 space-y-2 animate-pulse">
-            <div className="h-5 w-32 bg-neutral-200" />
-            <div className="h-5 w-40 bg-neutral-200" />
-            <div className="h-5 w-36 bg-neutral-200" />
+          <div className="bg-white brutal-border p-4 space-y-2 animate-in fade-in duration-300">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-5 w-36" />
           </div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="brutal-border bg-white p-4 animate-pulse">
-              <div className="h-8 w-72 mx-auto bg-neutral-200" />
+            <div
+              key={i}
+              className="brutal-border bg-white p-4 animate-in fade-in duration-300"
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <Skeleton className="h-8 w-72 mx-auto" />
               <div className="h-0 border-t border-black/10 mt-3 pt-3" />
-              <div className="h-8 w-32 mx-auto bg-neutral-200 mt-3" />
+              <Skeleton className="h-8 w-32 mx-auto mt-3" />
             </div>
           ))}
         </div>
@@ -165,7 +169,7 @@ function RodadasPage() {
   }
 
   return (
-    <div className="pb-4">
+    <div className="pb-4" style={{ viewTransitionName: "page-rodadas" } as any}>
       <PageHeader
         title="RODADAS"
         subtitle="Histórico de resultados"

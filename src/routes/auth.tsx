@@ -78,7 +78,7 @@ function AuthPage() {
   return (
     <div
       className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${bgAuth})`, viewTransitionName: "page-auth" }}
+      style={{ backgroundImage: `url(${bgAuth})`, viewTransitionName: "page-auth" } as any}
     >
       <Toaster position="top-center" />
       <main className="flex-1 flex items-center justify-center p-6">
