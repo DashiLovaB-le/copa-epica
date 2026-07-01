@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { getPhaseName, getPhaseInfo } from "@/lib/phases";
+import type { Phase } from "@/lib/phases";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => ({ meta: [{ title: "Ranking — Copa Épica" }] }),
@@ -34,7 +35,8 @@ async function fetchRanking() {
       .from("copaepica_matches")
       .select("id, result_a, result_b")
       .gte("match_date", "2026-06-28")
-      .not("result_a", "is", null),
+      .not("result_a", "is", null)
+      .not("result_b", "is", null),
   ]);
   if (profilesRes.error) throw profilesRes.error;
   if (predictionsRes.error) throw predictionsRes.error;
@@ -88,6 +90,7 @@ async function fetchLatestRound() {
     .select("round_number")
     .gte("match_date", "2026-06-28")
     .not("result_a", "is", null)
+    .not("result_b", "is", null)
     .order("round_number", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -114,7 +117,7 @@ type RoundFeedbackEntry = {
 
 type RoundFeedback = {
   round: number;
-  phase: string;
+  phase: Phase;
   entries: RoundFeedbackEntry[];
 };
 
@@ -129,86 +132,82 @@ type RankingChange = {
 };
 
 async function fetchRoundFeedback(): Promise<RoundFeedback | null> {
-  const { data: roundNumbers } = await supabase
+  const { data: roundNumbers, error: roundErr } = await supabase
     .from("copaepica_matches")
     .select("round_number")
     .gte("match_date", "2026-06-28")
     .not("result_a", "is", null)
+    .not("result_b", "is", null)
     .order("round_number", { ascending: false });
 
-  if (!roundNumbers?.length) return null;
+  if (roundErr || !roundNumbers?.length) return null;
 
   const uniqueRounds = [...new Set(roundNumbers.map(r => r.round_number))];
 
   for (const round of uniqueRounds) {
-    const { data: matches } = await supabase
+    const { data: matches, error: matchErr } = await supabase
       .from("copaepica_matches")
       .select("id, match_date, team_a, team_b, result_a, result_b")
       .eq("round_number", round)
       .gte("match_date", "2026-06-28")
-      .not("result_a", "is", null);
-    if (!matches?.length) continue;
+      .not("result_a", "is", null)
+      .not("result_b", "is", null);
+    if (matchErr || !matches?.length) continue;
 
     const phase = getPhaseName(matches[0].match_date);
     const matchIds = matches.map(m => m.id);
 
-    const { data: preds } = await supabase
+    const { data: allPreds } = await supabase
       .from("copaepica_predictions")
-      .select("user_id, points_earned, is_correct")
-      .in("match_id", matchIds)
-      .limit(1);
+      .select("user_id, match_id, predicted_a, predicted_b, points_earned, is_correct")
+      .in("match_id", matchIds);
 
-    if (preds?.length) {
-      const { data: profiles } = await supabase
-        .from("copaepica_profiles")
-        .select("id, display_name, points");
-      if (!profiles?.length) return null;
+    if (!allPreds?.length) continue;
 
-      const { data: allPreds } = await supabase
-        .from("copaepica_predictions")
-        .select("user_id, match_id, predicted_a, predicted_b, points_earned, is_correct")
-        .in("match_id", matchIds);
+    const { data: profiles } = await supabase
+      .from("copaepica_profiles")
+      .select("id, display_name, points");
+    if (!profiles?.length) return null;
 
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
-      const matchMap = new Map(matches.map(m => [m.id, m]));
-      const userData = new Map<string, { points_earned: number; correct_count: number; correct_predictions: CorrectPrediction[] }>();
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const matchMap = new Map(matches.map(m => [m.id, m]));
+    const userData = new Map<string, { points_earned: number; correct_count: number; correct_predictions: CorrectPrediction[] }>();
 
-      for (const p of allPreds ?? []) {
-        let ud = userData.get(p.user_id);
-        if (!ud) {
-          ud = { points_earned: 0, correct_count: 0, correct_predictions: [] };
-          userData.set(p.user_id, ud);
-        }
-        ud.points_earned += p.points_earned ?? 0;
-        if (p.is_correct) {
-          ud.correct_count++;
-          const match = matchMap.get(p.match_id);
-          if (match) {
-            ud.correct_predictions.push({
-              team_a: match.team_a,
-              team_b: match.team_b,
-              predicted_a: p.predicted_a,
-              predicted_b: p.predicted_b,
-              result_a: match.result_a,
-              result_b: match.result_b,
-              points_earned: p.points_earned ?? 0,
-            });
-          }
+    for (const p of allPreds) {
+      let ud = userData.get(p.user_id);
+      if (!ud) {
+        ud = { points_earned: 0, correct_count: 0, correct_predictions: [] };
+        userData.set(p.user_id, ud);
+      }
+      ud.points_earned += p.points_earned ?? 0;
+      if (p.is_correct) {
+        ud.correct_count++;
+        const match = matchMap.get(p.match_id);
+        if (match) {
+          ud.correct_predictions.push({
+            team_a: match.team_a,
+            team_b: match.team_b,
+            predicted_a: p.predicted_a,
+            predicted_b: p.predicted_b,
+            result_a: match.result_a!,
+            result_b: match.result_b!,
+            points_earned: p.points_earned ?? 0,
+          });
         }
       }
-
-      const entries = Array.from(userData.entries())
-        .filter(([id]) => profileMap.has(id))
-        .map(([id, ud]) => ({
-          display_name: profileMap.get(id)!.display_name,
-          points_earned: ud.points_earned,
-          correct_count: ud.correct_count,
-          correct_predictions: ud.correct_predictions,
-        }))
-        .sort((a, b) => b.points_earned - a.points_earned);
-
-      return { round, phase, entries };
     }
+
+    const entries = Array.from(userData.entries())
+      .filter(([id]) => profileMap.has(id))
+      .map(([id, ud]) => ({
+        display_name: profileMap.get(id)!.display_name,
+        points_earned: ud.points_earned,
+        correct_count: ud.correct_count,
+        correct_predictions: ud.correct_predictions,
+      }))
+      .sort((a, b) => b.points_earned - a.points_earned);
+
+    return { round, phase, entries };
   }
 
   return null;
@@ -221,24 +220,35 @@ function RankingPage() {
   const { data: ranking, isLoading } = useQuery({
     queryKey: ["ranking"],
     queryFn: fetchRanking,
+    refetchInterval: 30_000,
   });
 
   const { data: latestRound } = useQuery({
     queryKey: ["latest-round"],
     queryFn: fetchLatestRound,
+    refetchInterval: 30_000,
   });
 
   const { data: roundFeedback } = useQuery({
     queryKey: ["round-feedback"],
     queryFn: fetchRoundFeedback,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
     let mounted = true;
-    const cb = () => { if (mounted) qc.invalidateQueries({ queryKey: ["ranking"] }); };
+    const cb = () => {
+      if (!mounted) return;
+      qc.invalidateQueries({ queryKey: ["ranking"] });
+      qc.invalidateQueries({ queryKey: ["latest-round"] });
+      qc.invalidateQueries({ queryKey: ["round-feedback"] });
+      qc.invalidateQueries({ queryKey: ["my-rank"] });
+    };
     const ch = supabase
       .channel("ranking-feed")
       .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_profiles" }, cb)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_matches" }, cb)
+      .on("postgres_changes", { event: "*", schema: "public", table: "copaepica_predictions" }, cb)
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [qc]);
@@ -557,6 +567,12 @@ function RankingPage() {
                   );
                 })}
               </div>
+              <Link
+                to="/auditoria"
+                className="mt-3 w-full bg-[color:var(--brand-blue)] text-white brutal-border p-3 text-center font-bold uppercase tracking-widest text-sm block hover:brightness-110 transition-all"
+              >
+                🔍 AUDITORIA — Confira todos os palpites
+              </Link>
             </div>
           </>
         )}

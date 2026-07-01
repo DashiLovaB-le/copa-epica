@@ -48,7 +48,8 @@ async function fetchRank(id: string) {
       .from("copaepica_matches")
       .select("id, result_a, result_b")
       .gte("match_date", "2026-06-28")
-      .not("result_a", "is", null),
+      .not("result_a", "is", null)
+      .not("result_b", "is", null),
   ]);
   if (profilesRes.error) throw profilesRes.error;
   if (predictionsRes.error) throw predictionsRes.error;
@@ -149,14 +150,17 @@ function PerfilPage() {
   const { data: profile, isPending: profileLoading } = useQuery({
     queryKey: ["profile", user.id],
     queryFn: () => fetchProfile(user.id),
+    refetchInterval: 60_000,
   });
   const { data: rank, isPending: rankLoading } = useQuery({
     queryKey: ["my-rank", user.id],
     queryFn: () => fetchRank(user.id),
+    refetchInterval: 30_000,
   });
   const { data: roundHistory, isPending: historyLoading } = useQuery({
     queryKey: ["round-history", user.id],
     queryFn: () => fetchRoundHistory(user.id),
+    refetchInterval: 30_000,
   });
 
   const loading = profileLoading || rankLoading || historyLoading;

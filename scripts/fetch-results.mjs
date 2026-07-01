@@ -143,8 +143,9 @@ async function fetchApiMatches(dateStr) {
 function extractScore(match) {
   const score = match.score;
   if (!score) return null;
-  // Only use regular time (90min + stoppage time), no extra time or penalties
-  const src = score.regularTime;
+  // football-data.org v4 pode retornar só fullTime sem regularTime
+  // Tenta regularTime primeiro (90min), depois fullTime como fallback
+  const src = score.regularTime ?? score.fullTime;
   if (!src || src.home === null || src.away === null) return null;
   return { home: src.home, away: src.away };
 }

@@ -30,7 +30,7 @@ const TEAM_MAP: Record<string, string> = {
   "Irã": "Iran",
   "Nova Zelândia": "New Zealand",
   "Espanha": "Spain",
-  "Cabo Verde": "Cape Verde",
+  "Cabo Verde": "Cape Verde Islands",
   "Arábia Saudita": "Saudi Arabia",
   "Uruguai": "Uruguay",
   "França": "France",
@@ -42,7 +42,7 @@ const TEAM_MAP: Record<string, string> = {
   "Áustria": "Austria",
   "Jordânia": "Jordan",
   "Portugal": "Portugal",
-  "RD Congo": "DR Congo",
+  "RD Congo": "Congo DR",
   "Uzbequistão": "Uzbekistan",
   "Colômbia": "Colombia",
   "Inglaterra": "England",
@@ -90,7 +90,9 @@ function teamNamesMatch(a: string, b: string) {
 function extractScore(match: any) {
   const score = match.score;
   if (!score) return null;
-  const src = score.regularTime;
+  // football-data.org v4 pode retornar só fullTime sem regularTime
+  // Tenta regularTime primeiro, depois fullTime como fallback
+  const src = score.regularTime ?? score.fullTime;
   if (!src || src.home === null || src.away === null) return null;
   return { home: src.home, away: src.away };
 }
@@ -99,9 +101,29 @@ function matchKey(teamA: string, teamB: string, round: number) {
   return `${teamA}||${teamB}||${round}`;
 }
 
+function splitDateRange(dateFrom: string, dateTo: string, maxDays = 10): [string, string][] {
+  const chunks: [string, string][] = [];
+  const start = new Date(dateFrom);
+  const end = new Date(dateTo);
+  let current = new Date(start);
+  while (current <= end) {
+    const chunkEnd = new Date(current);
+    chunkEnd.setDate(chunkEnd.getDate() + maxDays - 1);
+    const to = chunkEnd > end ? end : chunkEnd;
+    chunks.push([
+      current.toISOString().slice(0, 10),
+      to.toISOString().slice(0, 10),
+    ]);
+    current = new Date(to);
+    current.setDate(current.getDate() + 1);
+  }
+  return chunks;
+}
+
 type UpdateResult = {
   synced: string[];
   updated: string[];
+  backfilled: number;
   failed: { match: string; reason: string }[];
 };
 
@@ -116,23 +138,33 @@ export async function updateMatchResults(): Promise<UpdateResult> {
 
   const sb = supabaseAdmin;
 
-  const result: UpdateResult = { synced: [], updated: [], failed: [] };
+  const result: UpdateResult = { synced: [], updated: [], backfilled: 0, failed: [] };
 
-  // 1. Fetch all matches from API (apenas jogos a partir de 28/06 — fases eliminatórias)
-  let apiMatches: any[];
+  // 1. Fetch all matches from API em chunks de ≤10 dias (limitação da API free tier)
+  const chunks = splitDateRange("2026-06-28", "2026-07-19", 10);
+  let apiMatches: any[] = [];
   try {
-    const url = `${FOOTBALL_API_BASE}/competitions/${COMPETITION_CODE}/matches?dateFrom=2026-06-28&dateTo=2026-07-19`;
-    const res = await fetch(url, {
-      headers: { "X-Auth-Token": FOOTBALL_API_KEY },
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`football-data.org ${res.status}: ${body}`);
+    for (const [from, to] of chunks) {
+      const url = `${FOOTBALL_API_BASE}/matches?dateFrom=${from}&dateTo=${to}&competitions=${COMPETITION_CODE}`;
+      const res = await fetch(url, {
+        headers: { "X-Auth-Token": FOOTBALL_API_KEY },
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`football-data.org ${res.status} (${from}–${to}): ${body}`);
+      }
+      const data = await res.json();
+      const fetched = data.matches ?? [];
+      apiMatches.push(...fetched);
+      // Rate limit: free tier permite 10 req/min
+      if (chunks.length > 1) await new Promise((r) => setTimeout(r, 7000));
     }
-    const data = await res.json();
-    apiMatches = data.matches ?? [];
+    if (apiMatches.length === 0) {
+      result.failed.push({ match: "API", reason: "Nenhuma partida encontrada na API para o período" });
+      return result;
+    }
   } catch (err: any) {
-    throw new Error(`API error: ${err.message}`);
+    throw new Error(`Erro ao buscar dados da API: ${err.message}`);
   }
 
   // 2. Fetch all existing matches from DB (single query)
@@ -152,8 +184,8 @@ export async function updateMatchResults(): Promise<UpdateResult> {
   const toUpdate: { id: string; result_a: number; result_b: number; label: string }[] = [];
 
   for (const apiMatch of apiMatches) {
-    const homeEn = apiMatch.homeTeam?.name ?? "";
-    const awayEn = apiMatch.awayTeam?.name ?? "";
+    const homeEn = apiMatch.homeTeam?.name ?? apiMatch.homeTeam?.shortName ?? "";
+    const awayEn = apiMatch.awayTeam?.name ?? apiMatch.awayTeam?.shortName ?? "";
     if (!homeEn || !awayEn) {
       continue; // jogos com times ainda indefinidos (ex: fases futuras)
     }
@@ -223,6 +255,39 @@ export async function updateMatchResults(): Promise<UpdateResult> {
     } else {
       result.updated.push(u.label);
     }
+  }
+
+  // 6. Backfill: pontua palpites que ficaram sem pontuação
+  //    (criados APÓS o resultado já estar na partida)
+  try {
+    const { data: matchesWithResults } = await sb
+      .from("copaepica_matches")
+      .select("id, team_a, team_b, result_a, result_b")
+      .not("result_a", "is", null)
+      .not("result_b", "is", null);
+
+    if (matchesWithResults) {
+      for (const match of matchesWithResults) {
+        const { data: unscored } = await sb
+          .from("copaepica_predictions")
+          .select("id, predicted_a, predicted_b")
+          .eq("match_id", match.id)
+          .is("is_correct", null);
+
+        if (unscored && unscored.length > 0) {
+          for (const p of unscored) {
+            const isCorrect = (p.predicted_a === match.result_a && p.predicted_b === match.result_b);
+            await sb
+              .from("copaepica_predictions")
+              .update({ is_correct: isCorrect, points_earned: isCorrect ? 10 : 0 })
+              .eq("id", p.id);
+          }
+          result.backfilled += unscored.length;
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error("[backfill] Erro no backfill de palpites:", err.message);
   }
 
   return result;

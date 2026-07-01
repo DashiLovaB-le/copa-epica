@@ -90,13 +90,24 @@ function RodadasPage() {
       const partes: string[] = [];
       if (result.synced.length > 0) partes.push(`${result.synced.length} novos jogos`);
       if (result.updated.length > 0) partes.push(`${result.updated.length} resultados`);
-      if (result.failed.length > 0) partes.push(`${result.failed.length} falhas`);
+      if (result.backfilled > 0) partes.push(`${result.backfilled} palpites pontuados`);
+      if (result.failed.length > 0) {
+        const firstReason = result.failed[0]?.reason;
+        if (result.failed.length === 1 && firstReason) {
+          partes.push(firstReason);
+        } else {
+          partes.push(`${result.failed.length} falhas`);
+        }
+      }
       if (partes.length > 0) {
         toast.success(partes.join(", "));
       } else {
         toast.info("Nenhuma atualização disponível");
       }
       qc.invalidateQueries({ queryKey: ["rodadas"] });
+      qc.invalidateQueries({ queryKey: ["ranking"] });
+      qc.invalidateQueries({ queryKey: ["latest-round"] });
+      qc.invalidateQueries({ queryKey: ["round-feedback"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Erro ao atualizar resultados");
     } finally {
@@ -176,6 +187,7 @@ function RodadasPage() {
       <PageHeader
         title="RODADAS"
         subtitle="Histórico de resultados"
+        /*
         right={
           <button
             onClick={handleUpdate}
@@ -185,6 +197,7 @@ function RodadasPage() {
             {updating ? <BouncingBall /> : "ATUALIZAR"}
           </button>
         }
+        */
       />
 
       {phases.length === 0 ? (
