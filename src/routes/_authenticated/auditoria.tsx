@@ -43,15 +43,17 @@ async function fetchAuditData(): Promise<RoundGroup[]> {
 
   if (!matches.length) return [];
 
-  const matchIds = new Set(matches.map((m) => m.id));
+  const profileMap = new Map<string, string>();
+  for (const p of profiles) {
+    profileMap.set(p.id, p.display_name);
+  }
 
   const predsByMatch = new Map<string, PlayerPrediction[]>();
   for (const pred of predictions) {
-    if (!matchIds.has(pred.match_id)) continue;
     const existing = predsByMatch.get(pred.match_id);
     const entry: PlayerPrediction = {
       user_id: pred.user_id,
-      display_name: "Desconhecido",
+      display_name: profileMap.get(pred.user_id) ?? "Desconhecido",
       predicted_a: pred.predicted_a,
       predicted_b: pred.predicted_b,
       created_at: pred.created_at,
@@ -65,18 +67,7 @@ async function fetchAuditData(): Promise<RoundGroup[]> {
     }
   }
 
-  for (const predList of predsByMatch.values()) {
-    for (const p of predList) {
-      for (const prof of profiles) {
-        if (prof.id === p.user_id) {
-          p.display_name = prof.display_name;
-          break;
-        }
-      }
-    }
-  }
-
-  const matchMap: MatchAudit[] = [];
+  const roundMap = new Map<number, MatchAudit[]>();
   for (const m of matches) {
     const existingPreds = predsByMatch.get(m.id) ?? [];
     const existingUserIds = new Set(existingPreds.map((p) => p.user_id));
@@ -96,7 +87,7 @@ async function fetchAuditData(): Promise<RoundGroup[]> {
       }
     }
 
-    matchMap.push({
+    const matchAudit: MatchAudit = {
       id: m.id,
       team_a: m.team_a,
       team_b: m.team_b,
@@ -105,16 +96,13 @@ async function fetchAuditData(): Promise<RoundGroup[]> {
       result_a: m.result_a!,
       result_b: m.result_b!,
       predictions: allMatchPreds,
-    });
-  }
+    };
 
-  const roundMap = new Map<number, MatchAudit[]>();
-  for (const m of matchMap) {
     const list = roundMap.get(m.round_number);
     if (list) {
-      list.push(m);
+      list.push(matchAudit);
     } else {
-      roundMap.set(m.round_number, [m]);
+      roundMap.set(m.round_number, [matchAudit]);
     }
   }
 
@@ -144,7 +132,7 @@ function formatPredictionDate(iso: string) {
 function AuditoriaPage() {
   const { user } = Route.useRouteContext();
 
-  const { data: rounds, isLoading } = useQuery({
+  const { data: rounds, isLoading, error } = useQuery({
     queryKey: ["auditoria"],
     queryFn: fetchAuditData,
     refetchInterval: 30_000,
@@ -168,6 +156,27 @@ function AuditoriaPage() {
               <div className="h-8 bg-muted rounded w-full" />
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="animate-in fade-in duration-300">
+        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
+          <div className="flex items-center gap-3">
+            <Link to="/ranking" className="hover:brightness-110 transition-all">
+              <ChevronLeft className="size-6" />
+            </Link>
+            <h1 className="text-4xl font-display tracking-wider">AUDITORIA</h1>
+          </div>
+        </header>
+        <div className="p-4">
+          <div className="bg-card brutal-border p-6 text-center">
+            <p className="font-display text-2xl text-red-500">Erro ao carregar</p>
+            <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+          </div>
         </div>
       </div>
     );
@@ -341,20 +350,20 @@ function AuditoriaContent({ rounds, userId }: { rounds: RoundGroup[]; userId: st
                                 <td className="py-2 pr-2 text-center align-middle">
                                   {temPalpite ? (
                                     p.is_correct ? (
-                                      <span className="text-[color:var(--brand-green)] font-bold text-sm">
-                                        ✓
-                                      </span>
+                                      <span className="text-[color:var(--brand-green)] font-bold text-sm">✓</span>
                                     ) : (
-                                      <span className="text-red-500 font-bold text-sm">
-                                        ✗
-                                      </span>
+                                      <span className="text-red-500 font-bold text-sm">✗</span>
                                     )
                                   ) : (
                                     <span className="text-muted-foreground text-xs">—</span>
                                   )}
                                 </td>
                                 <td className="py-2 pr-2 text-right font-display text-lg align-middle">
-                                  {temPalpite ? p.points_earned : <span className="text-muted-foreground font-sans text-xs">—</span>}
+                                  {temPalpite ? (
+                                    p.points_earned
+                                  ) : (
+                                    <span className="text-muted-foreground font-sans text-xs">—</span>
+                                  )}
                                 </td>
                                 <td className="py-2 text-right text-[10px] text-muted-foreground align-middle whitespace-nowrap">
                                   {temPalpite ? formatPredictionDate(p.created_at!) : "—"}

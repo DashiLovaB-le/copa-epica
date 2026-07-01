@@ -16,6 +16,7 @@ import { Route as AuthenticatedRodadasRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPalpitesRouteImport } from './routes/_authenticated/palpites'
+import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -51,10 +52,16 @@ const AuthenticatedPalpitesRoute = AuthenticatedPalpitesRouteImport.update({
   path: '/palpites',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/palpites': typeof AuthenticatedPalpitesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/palpites': typeof AuthenticatedPalpitesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/palpites': typeof AuthenticatedPalpitesRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
@@ -80,14 +89,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/palpites' | '/perfil' | '/ranking' | '/rodadas'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/auditoria'
+    | '/palpites'
+    | '/perfil'
+    | '/ranking'
+    | '/rodadas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/palpites' | '/perfil' | '/ranking' | '/rodadas'
+  to:
+    | '/'
+    | '/auth'
+    | '/auditoria'
+    | '/palpites'
+    | '/perfil'
+    | '/ranking'
+    | '/rodadas'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/auditoria'
     | '/_authenticated/palpites'
     | '/_authenticated/perfil'
     | '/_authenticated/ranking'
@@ -151,10 +175,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPalpitesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auditoria': {
+      id: '/_authenticated/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedPalpitesRoute: typeof AuthenticatedPalpitesRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
@@ -162,6 +194,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedPalpitesRoute: AuthenticatedPalpitesRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
