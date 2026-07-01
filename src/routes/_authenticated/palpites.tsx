@@ -6,6 +6,7 @@ import { ScoreInput } from "@/components/ScoreInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMatchDate, formatCountdown } from "@/lib/format";
 import { updateResults } from "@/lib/api/update-results.functions";
+import { LastSyncText } from "@/components/last-sync-text";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/palpites")({
@@ -280,6 +281,7 @@ function PalpitesPage() {
             {updating ? <BouncingBall /> : "ATUALIZAR"}
           </button>
           */}
+          <LastSyncText />
         </div>
       </header>
 

@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMatchDate } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
+import { LastSyncText } from "@/components/last-sync-text";
 import { updateResults } from "@/lib/api/update-results.functions";
 import { toast } from "sonner";
 import { getPhaseName, PHASE_ORDER, getPhaseInfo, getPhaseDateLabel } from "@/lib/phases";
@@ -187,17 +188,7 @@ function RodadasPage() {
       <PageHeader
         title="RODADAS"
         subtitle="Histórico de resultados"
-        /*
-        right={
-          <button
-            onClick={handleUpdate}
-            disabled={updating}
-            className="flex-shrink-0 bg-[color:var(--brand-green)] text-white brutal-border brutal-shadow px-4 py-2 font-display text-lg tracking-wider active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60 disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow"
-          >
-            {updating ? <BouncingBall /> : "ATUALIZAR"}
-          </button>
-        }
-        */
+        right={<LastSyncText />}
       />
 
       {phases.length === 0 ? (

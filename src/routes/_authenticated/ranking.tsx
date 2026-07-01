@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { LastSyncText } from "@/components/last-sync-text";
 import { getPhaseName, getPhaseInfo } from "@/lib/phases";
 import type { Phase } from "@/lib/phases";
 
@@ -308,8 +309,11 @@ function RankingPage() {
   if (isLoading) {
     return (
       <div className="animate-in fade-in duration-300" style={{ viewTransitionName: "page-ranking" } as any}>
-        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
-          <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
+        <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-display tracking-wider">RANKING GERAL</h1>
+          </div>
+          <LastSyncText />
         </header>
         <div className="p-4 space-y-3">
           {[1, 2, 3].map((i) => (
@@ -341,14 +345,17 @@ function RankingPage() {
 
   return (
     <div style={{ viewTransitionName: "page-ranking" } as any}>
-      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
-        <h1 className="text-4xl font-display tracking-wider leading-none">
-          RANKING GERAL
-        </h1>
-        <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
-          {participants.length} participantes
-          {latestRound ? `  ·  Atualizado após a Rodada ${latestRound}` : ""}
-        </p>
+      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-display tracking-wider leading-none">
+            RANKING GERAL
+          </h1>
+          <p className="text-[11px] uppercase font-bold tracking-widest mt-2 text-[color:var(--brand-yellow)]">
+            {participants.length} participantes
+            {latestRound ? `  ·  Atualizado após a Rodada ${latestRound}` : ""}
+          </p>
+        </div>
+        <LastSyncText />
       </header>
 
       <div className="p-4 space-y-6">

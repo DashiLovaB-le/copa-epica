@@ -403,6 +403,19 @@ async function main() {
 
   // ── Resumo ──
   printSummary(results, backfilled);
+
+  // ── Log ──
+  try {
+    await sb.from("copaepica_sync_log").insert({
+      synced_at: new Date().toISOString(),
+      matches_updated: results.updated,
+      matches_inserted: results.inserted,
+      predictions_backfilled: backfilled,
+      status: "success",
+    });
+  } catch (logErr) {
+    console.error("  ⚠ Erro ao salvar log:", logErr.message);
+  }
 }
 
 main().catch((err) => {

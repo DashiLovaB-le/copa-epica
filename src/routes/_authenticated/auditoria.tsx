@@ -5,6 +5,7 @@ import { getPhaseName, getPhaseInfo } from "@/lib/phases";
 import { formatMatchDate } from "@/lib/format";
 import { fetchAuditDataServer } from "@/lib/api/auditoria.functions";
 import { ChevronLeft } from "lucide-react";
+import { LastSyncText } from "@/components/last-sync-text";
 
 export const Route = createFileRoute("/_authenticated/auditoria")({
   head: () => ({ meta: [{ title: "Auditoria — Copa Épica" }] }),
@@ -216,7 +217,7 @@ function AuditoriaContent({ rounds, userId }: { rounds: RoundGroup[]; userId: st
 
   return (
     <div className="animate-in fade-in duration-300">
-      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5">
+      <header className="bg-brand-blue-gradient text-white brutal-border border-x-0 border-t-0 p-5 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link to="/ranking" className="hover:brightness-110 transition-all">
             <ChevronLeft className="size-6" />
@@ -230,6 +231,7 @@ function AuditoriaContent({ rounds, userId }: { rounds: RoundGroup[]; userId: st
             </p>
           </div>
         </div>
+        <LastSyncText />
       </header>
 
       <div className="p-4 space-y-6">
